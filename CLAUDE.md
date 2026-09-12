@@ -124,6 +124,9 @@ runtime. Read both through `SettingsService`.
 - **The message store exists because the Bot API cannot fetch an arbitrary message by
   id.** If the bot did not see a message go past, it does not have it — `/train` on an
   old link legitimately fails, and that is reported, not worked around.
+- **Health is about moderating, not about being alive.** `ModerationHealthIndicator`
+  reports DOWN when `HealthMonitor` is degraded, so the container restarts a bot whose
+  judgments all fail. Actuator exposes only `health`, on port 8081.
 - **Some `/stats` figures are in-memory and say so.** Token spend and the extended-query
   rate are counters reset by a restart, reported as "since startup"; volume and actions
   come from persisted rows and honour the requested period. Don't quietly mix the two.

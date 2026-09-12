@@ -81,6 +81,19 @@ savonarola:
     template: "Utente {user} mutato per {duration}."
     reply-to-offending-message: true
 
+management:
+  endpoints:
+    web:
+      exposure:
+        # Only health. The container reads it; nothing else should be reachable.
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  server:
+    # Off the default port so the health endpoint is never confused with anything public.
+    port: 8081
+
 logging:
   level:
     com.github.stormino.savonarola: INFO

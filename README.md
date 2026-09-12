@@ -79,6 +79,10 @@ On first start the five rules from SPEC section 2.3 are seeded, and the bot begi
 judging in `LOG_ONLY`. You should see verdicts appear in the admin chat within a few
 messages.
 
+The container exposes a health endpoint on port 8081 that Docker polls. It reports DOWN
+when judgments are failing, not merely when the process has died — a bot that is alive but
+silently no longer moderating is the failure worth catching.
+
 > The database under `/data` holds the message store, the moderation record, the
 > escalation ladder and every trained example. Losing that volume resets all of it.
 
