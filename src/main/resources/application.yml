@@ -63,14 +63,17 @@ savonarola:
       groq:
         base-url: https://api.groq.com/openai/v1
         api-key: ${GROQ_API_KEY:}
-        # Every model on the free tier shares the same ceiling: 30 RPM, 1K RPD, 8K TPM,
-        # 200K TPD. TPD is what binds — a judgment prompt is ~2K tokens, so roughly 100
-        # judgments per day per model, and the quota is per model. The profile model is
-        # therefore deliberately one NOT in the judgment chain, so nightly profiling draws
-        # on its own 200K rather than eating the judgment budget.
+        # All three verified against the live API: they accept response_format=json_object
+        # and answer the real rulebook prompt correctly. qwen3.6-27b and gpt-oss-safeguard-20b
+        # do NOT accept json_object and must not be used here.
+        #
+        # Free tier ceiling per model: 30 RPM, 1K RPD, 8K TPM, 200K TPD. TPD binds — a real
+        # judgment prompt measured ~1.1K tokens with a short context window, so roughly 120
+        # a day per model. The profile model is deliberately outside the judgment chain so
+        # nightly profiling draws on its own 200K instead of eating the judgment budget.
         judgment-models:
           - ${SAV_PRIMARY_MODEL:openai/gpt-oss-120b}
-          - ${SAV_FALLBACK_MODEL:qwen/qwen3.6-27b}
+          - ${SAV_FALLBACK_MODEL:qwen/qwen3.8-27b}
         profile-model: ${SAV_PROFILE_MODEL:openai/gpt-oss-20b}
       openrouter:
         base-url: https://openrouter.ai/api/v1
