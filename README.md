@@ -52,6 +52,9 @@ against Telegram, never read from config.
 | `/execute <decisionId> dismiss` | Discard the decision, no action |
 | `/train <rule_id> <positive\|negative> <link>` | Add a labelled example to a rule. Never retroactive. |
 | `/dynamic <@a\|id> <@b\|id> <description>` | Record a known dynamic between two members. The batch job never overwrites it. |
+| `/rulebook update [link\|text]` | Compile the rulebook into rules. Reply to the message or file holding it, or pass a link. Nothing activates yet. |
+| `/rulebook approve\|reject <proposalId>` | Activate or discard a compiled rulebook |
+| `/rulebook pending` | List proposals awaiting review |
 
 ## Profiling
 
@@ -69,7 +72,6 @@ and works busiest-first.
 
 ## Not implemented yet
 
-- `/regolamento aggiorna` — LLM-assisted compilation of the rulebook with admin approval (SPEC 2.1)
 - `/stats` — usage and accuracy reporting (SPEC 13)
 - Commands to toggle rules, mode, and thresholds at runtime (SPEC 12)
 

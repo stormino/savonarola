@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface RuleExampleRepository extends JpaRepository<RuleExample, Long> {
     List<RuleExample> findByRuleId(String ruleId);
+
+    boolean existsByRuleIdAndText(String ruleId, String text);
 }

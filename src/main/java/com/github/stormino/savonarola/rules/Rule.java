@@ -31,6 +31,12 @@ public class Rule {
         this.enabled = enabled;
     }
 
+    public void redefine(Severity severity, boolean requiresHistory, String definition) {
+        this.severity = severity;
+        this.requiresHistory = requiresHistory;
+        this.definition = definition;
+    }
+
     public String getId() { return id; }
     public Severity getSeverity() { return severity; }
     public boolean isRequiresHistory() { return requiresHistory; }

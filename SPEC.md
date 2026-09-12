@@ -21,9 +21,11 @@ Il regolamento esiste oggi come testo in linguaggio naturale (in italiano). Dive
 
 ### 2.1 Aggiornamento del regolamento
 
-- Comando admin diretto nel bot (testo o file allegato) — nessuna dipendenza da repository esterni per l'MVP.
+- Comando admin diretto nel bot: `/rulebook update`, in risposta al messaggio che contiene il regolamento o al file allegato, oppure con un link a un messaggio o il testo inline — nessuna dipendenza da repository esterni per l'MVP. La forma per citazione e quella per link sono quelle che contano davvero: un regolamento raramente entra nei 4096 caratteri di un singolo messaggio Telegram.
+- Il nome del comando è in inglese come tutti gli altri (sezione 16); la bozza iniziale usava `/regolamento aggiorna`, incoerente con quel vincolo.
 - La conversione testo → RuleSet è **LLM-assisted**: un modello scompone il testo in regole discrete (id, descrizione, severità, esempi).
 - **Nessuna attivazione automatica**: il bot posta il RuleSet proposto sul canale admin; un admin deve confermare prima che diventi il RuleSet attivo. Un errore di parsing qui si propagherebbe a tutte le decisioni successive, quindi la review umana è obbligatoria.
+- All'approvazione, le regole che il nuovo regolamento non contiene vengono **disattivate, mai cancellate**, e nessun esempio viene rimosso: il training (sezione 8) è lavoro degli admin e una riscrittura del regolamento non deve distruggerlo. Un RuleSet compilato vuoto viene rifiutato, altrimenti un errore di parsing disattiverebbe tutto in silenzio.
 
 ### 2.2 RuleSet — struttura dati
 
@@ -284,7 +286,9 @@ Tutti disponibili solo sulla chat Admin schiaffers, permessi verificati dinamica
 
 | Comando | Scopo |
 |---|---|
-| `/regolamento aggiorna` (testo/file) | Trigger compilazione LLM-assisted del RuleSet, con review/approve |
+| `/rulebook update [link\|testo]` (o in risposta al messaggio/file col regolamento) | Trigger compilazione LLM-assisted del RuleSet |
+| `/rulebook approve\|reject <proposalId>` | Attiva o scarta un RuleSet compilato |
+| `/rulebook pending` | Elenca le proposte in attesa |
 | `/train <rule_id> <positive\|negative> <link>` | Aggiunge un esempio a una regola |
 | `/dynamic <@a\|id> <@b\|id> <descrizione>` | Seeda o corregge una dinamica nota tra due utenti (sezione 7.3) |
 | `/execute <decisionId> [duration=...\|dismiss]` | Esegue/modifica/scarta una decisione in `ON_DEMAND_ACTION` |
