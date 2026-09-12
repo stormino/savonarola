@@ -56,12 +56,15 @@ savonarola:
       groq:
         base-url: https://api.groq.com/openai/v1
         api-key: ${GROQ_API_KEY:}
-        # VERIFY these ids against Groq's current model list before the first run:
-        # a wrong id fails every call, and the whole chain failing is the only symptom.
+        # Every model on the free tier shares the same ceiling: 30 RPM, 1K RPD, 8K TPM,
+        # 200K TPD. TPD is what binds — a judgment prompt is ~2K tokens, so roughly 100
+        # judgments per day per model, and the quota is per model. The profile model is
+        # therefore deliberately one NOT in the judgment chain, so nightly profiling draws
+        # on its own 200K rather than eating the judgment budget.
         judgment-models:
-          - ${SAV_PRIMARY_MODEL:qwen/qwen3.6-27b}
-          - ${SAV_FALLBACK_MODEL:openai/gpt-oss-120b}
-        profile-model: ${SAV_PROFILE_MODEL:llama-3.1-8b-instant}
+          - ${SAV_PRIMARY_MODEL:openai/gpt-oss-120b}
+          - ${SAV_FALLBACK_MODEL:qwen/qwen3.6-27b}
+        profile-model: ${SAV_PROFILE_MODEL:openai/gpt-oss-20b}
       openrouter:
         base-url: https://openrouter.ai/api/v1
         api-key: ${OPENROUTER_API_KEY:}
