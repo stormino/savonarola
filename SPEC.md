@@ -65,7 +65,7 @@ operatingMode: LOG_ONLY | ON_DEMAND_ACTION | LIVE_ACTION
 
 | Modalità | Comportamento |
 |---|---|
-| `LOG_ONLY` | Dry run. Ogni decisione (violata o no) loggata su Admin schiaffers. Nessuna azione possibile, nemmeno manuale. Serve a validare l'accuratezza prima di dare potere reale al bot. |
+| `LOG_ONLY` | Dry run. Ogni decisione (violata o no) loggata su Admin schiaffers. Nessuna azione possibile, nemmeno manuale: `/execute` viene rifiutato. Le violazioni vengono comunque persistite con status `logged` — senza una traccia, la modalità che esiste per misurare l'accuratezza non lascerebbe nulla da misurare. Serve a validare l'accuratezza prima di dare potere reale al bot. |
 | `ON_DEMAND_ACTION` | Sopra soglia di confidenza, il bot prepara la decisione (regola, motivazione, azione suggerita) e la posta su Admin schiaffers con un comando pronto (`/execute`). Un admin conferma, modifica o scarta. |
 | `LIVE_ACTION` | Stesso giudizio, ma l'azione parte autonomamente sopra soglia, senza attesa. |
 
@@ -142,11 +142,13 @@ decision:
   reasoning: "<string>"
   suggestedAction: { type: mute, durationMinutes: <int>, rung: <int> }
   actualAction: { type: mute, durationMinutes: <int> }   # presente solo se diverso dal suggerito
-  status: pending | executed | dismissed
+  status: logged | pending | executed | dismissed
   resolvedBy: <admin_telegram_id>   # presente solo per pending → executed/dismissed
 ```
 
 `suggestedAction` è calcolata in base alla posizione dell'utente sulla escalation ladder (sezione 7) al momento del giudizio.
+
+`logged` è lo status delle decisioni registrate in `LOG_ONLY`: non sono mai azionabili e non contano mai ai fini della posizione sulla ladder (sezione 9), che è derivata dalle sole decisioni `executed`.
 
 ---
 
@@ -240,13 +242,17 @@ escalation:
 
 ## 10. Comando `/execute`
 
-Disponibile solo in `ON_DEMAND_ACTION`, sulla chat Admin schiaffers.
+Disponibile sulla chat Admin schiaffers in `ON_DEMAND_ACTION` e in `LIVE_ACTION`. **Rifiutato in `LOG_ONLY`**, dove nessuna azione è possibile nemmeno manualmente (sezione 3).
+
+Serve anche in `LIVE_ACTION` perché le decisioni che raggiungono il tetto della ladder (`admin_review`, sezione 9) restano `pending` anche in quella modalità: senza `/execute` sarebbero irraggiungibili per sempre.
 
 ```
-/execute <decisionId>                     → esegue l'azione suggerita così com'è
-/execute <decisionId> duration=<Nm|Nh>    → esegue con durata modificata
-/execute <decisionId> dismiss             → scarta, nessuna azione
+/execute <decisionId>                        → esegue l'azione suggerita così com'è
+/execute <decisionId> duration=<Nm|Nh|Nd>    → esegue con durata modificata
+/execute <decisionId> dismiss                → scarta, nessuna azione
 ```
+
+Al tetto della ladder il bot non propone una durata, per definizione: lì `duration=` è obbligatorio e il comando senza durata viene rifiutato. La durata massima accettata è 30 giorni, coerente con "il ban non è mai un'azione automatica del bot" (sezione 9).
 
 La durata modificata viene registrata come `actualAction` nel decision object (sezione 5) — segnale utile in futuro per capire quanto spesso gli admin correggono le proposte del bot, e quindi quanto la ladder configurata è tarata bene.
 
