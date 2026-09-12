@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: savonarola
+  datasource:
+    url: jdbc:h2:file:./data/savonarola;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+savonarola:
+  # LOG_ONLY -> ON_DEMAND_ACTION -> LIVE_ACTION
+  operating-mode: LOG_ONLY
+
+  telegram:
+    token: ${SAV_BOT_TOKEN}
+    main-chat-id: ${SAV_MAIN_CHAT_ID}
+    admin-chat-id: ${SAV_ADMIN_CHAT_ID}
+
+  decision:
+    # Deliberately low while in LOG_ONLY: a false positive only costs a read message.
+    confidence-threshold: 0.6
+
+  pattern-detection:
+    negative-interaction-threshold: 3
+    window-days: 30
+
+  escalation:
+    ladder-minutes: [5, 30, 120, 1440]   # beyond the last rung -> ADMIN_REVIEW
+    decay-after-days: 30
+
+  message-store:
+    retention-days: 90
+    context-window-size: 15
+
+  llm:
+    base-url: https://openrouter.ai/api/v1
+    api-key: ${OPENROUTER_API_KEY}
+    judgment-models:
+      - ${SAV_PRIMARY_MODEL:thinkingmachines/inkling}
+      - ${SAV_FALLBACK_MODEL:nvidia/nemotron-3-super}
+    profile-model: ${SAV_PROFILE_MODEL:thinkingmachines/inkling-small}
+
+  health:
+    consecutive-failure-threshold: 3
+    tag: "⚠️ SYSTEM"
+
+  action-announcement:
+    enabled: true
+    template: "Utente {user} mutato per {duration}."
+    reply-to-offending-message: true
+
+logging:
+  level:
+    com.github.stormino.savonarola: INFO
