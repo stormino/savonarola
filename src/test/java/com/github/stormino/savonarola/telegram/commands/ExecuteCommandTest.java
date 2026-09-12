@@ -8,6 +8,7 @@ import com.github.stormino.savonarola.moderation.DecisionRepository;
 import com.github.stormino.savonarola.moderation.DecisionStatus;
 import com.github.stormino.savonarola.moderation.Judgment;
 import com.github.stormino.savonarola.moderation.OperatingMode;
+import com.github.stormino.savonarola.settings.SettingsService;
 import com.github.stormino.savonarola.store.MessageStoreService;
 import com.github.stormino.savonarola.store.StoredMessage;
 import com.github.stormino.savonarola.telegram.AdminNotifier;
@@ -67,7 +68,9 @@ class ExecuteCommandTest {
     }
 
     private ExecuteCommand commandUnder(OperatingMode mode) {
-        return new ExecuteCommand(TestProperties.with(mode), decisions, executor,
+        SettingsService settings = mock(SettingsService.class);
+        when(settings.operatingMode()).thenReturn(mode);
+        return new ExecuteCommand(settings, decisions, executor,
                 messageStore, adminRegistry, notifier);
     }
 

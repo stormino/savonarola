@@ -1,6 +1,7 @@
 package com.github.stormino.savonarola.moderation;
 
 import com.github.stormino.savonarola.config.SavonarolaProperties;
+import com.github.stormino.savonarola.settings.SettingsService;
 import com.github.stormino.savonarola.telegram.AdminNotifier;
 import com.github.stormino.savonarola.telegram.Html;
 import lombok.RequiredArgsConstructor;
@@ -15,12 +16,13 @@ import org.telegram.telegrambots.meta.api.objects.message.Message;
 public class DecisionRouter {
 
     private final SavonarolaProperties props;
+    private final SettingsService settings;
     private final DecisionRepository decisions;
     private final AdminNotifier notifier;
     private final ActionExecutor executor;
 
     public void route(Message msg, Judgment judgment, Action suggested) {
-        OperatingMode mode = props.operatingMode();
+        OperatingMode mode = settings.operatingMode();
 
         if (mode == OperatingMode.LOG_ONLY) {
             if (judgment.violated()) {
@@ -33,7 +35,7 @@ public class DecisionRouter {
 
         if (!judgment.violated()) return;
 
-        if (judgment.confidence() < props.decision().confidenceThreshold()) {
+        if (judgment.confidence() < settings.confidenceThreshold()) {
             // Not confident enough to propose a penalty — a human decides from scratch.
             notifier.send(lowConfidenceFlag(msg, judgment));
             return;

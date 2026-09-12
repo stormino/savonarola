@@ -1,6 +1,5 @@
 package com.github.stormino.savonarola.telegram.commands;
 
-import com.github.stormino.savonarola.config.SavonarolaProperties;
 import com.github.stormino.savonarola.moderation.Action;
 import com.github.stormino.savonarola.moderation.ActionExecutor;
 import com.github.stormino.savonarola.moderation.ActionType;
@@ -8,6 +7,7 @@ import com.github.stormino.savonarola.moderation.Decision;
 import com.github.stormino.savonarola.moderation.DecisionRepository;
 import com.github.stormino.savonarola.moderation.DecisionStatus;
 import com.github.stormino.savonarola.moderation.OperatingMode;
+import com.github.stormino.savonarola.settings.SettingsService;
 import com.github.stormino.savonarola.store.MessageStoreService;
 import com.github.stormino.savonarola.store.StoredMessage;
 import com.github.stormino.savonarola.telegram.AdminCommand;
@@ -28,7 +28,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ExecuteCommand implements AdminCommand {
 
-    private final SavonarolaProperties props;
+    private final SettingsService settings;
     private final DecisionRepository decisions;
     private final ActionExecutor executor;
     private final MessageStoreService messageStore;
@@ -47,7 +47,7 @@ public class ExecuteCommand implements AdminCommand {
 
     @Override
     public void handle(Message msg, List<String> args) {
-        if (props.operatingMode() == OperatingMode.LOG_ONLY) {
+        if (settings.operatingMode() == OperatingMode.LOG_ONLY) {
             notifier.reply(msg, "Modalità <b>LOG_ONLY</b>: nessuna azione è eseguibile, "
                     + "nemmeno manualmente. Cambia modalità operativa per usare /execute.");
             return;

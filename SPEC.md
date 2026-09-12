@@ -293,9 +293,13 @@ Tutti disponibili solo sulla chat Admin schiaffers, permessi verificati dinamica
 | `/dynamic <@a\|id> <@b\|id> <descrizione>` | Seeda o corregge una dinamica nota tra due utenti (sezione 7.3) |
 | `/execute <decisionId> [duration=...\|dismiss]` | Esegue/modifica/scarta una decisione in `ON_DEMAND_ACTION` |
 | `/stats [today\|week\|month\|all]` | Statistiche on-demand (sezione 13) |
-| *(da definire)* | Toggle enabled/disabled per singola regola, cambio `operatingMode`, cambio soglia di confidenza |
+| `/rule list\|enable\|disable <rule_id>` | Elenca le regole e le attiva/disattiva. Disattivare non cancella: gli esempi restano |
+| `/mode [LOG_ONLY\|ON_DEMAND_ACTION\|LIVE_ACTION]` | Mostra o cambia la modalità operativa |
+| `/threshold [0.0-1.0]` | Mostra o cambia la soglia di confidenza |
 
 Nessuna approvazione a maggioranza richiesta per l'MVP: un singolo admin che conferma è sufficiente per qualunque azione, incluse le approvazioni del RuleSet.
+
+`operatingMode` e la soglia di confidenza sono modificabili a runtime e **persistono ai riavvii**: i valori in `application.yml` restano il punto di partenza dichiarato, non l'ultima parola. Ogni cambio dei due, e ogni toggle di regola, viene annunciato sulla chat admin con chi l'ha fatto: sono le manopole che decidono quanto potere ha il bot, e nessun admin deve scoprirlo per caso.
 
 ---
 

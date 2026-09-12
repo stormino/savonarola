@@ -1,6 +1,7 @@
 package com.github.stormino.savonarola.moderation;
 
 import com.github.stormino.savonarola.TestProperties;
+import com.github.stormino.savonarola.settings.SettingsService;
 import com.github.stormino.savonarola.telegram.AdminNotifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,10 @@ class DecisionRouterTest {
     }
 
     private DecisionRouter router(OperatingMode mode) {
-        return new DecisionRouter(TestProperties.with(mode), decisions, notifier, executor);
+        SettingsService settings = mock(SettingsService.class);
+        when(settings.operatingMode()).thenReturn(mode);
+        when(settings.confidenceThreshold()).thenReturn(0.6);
+        return new DecisionRouter(TestProperties.with(mode), settings, decisions, notifier, executor);
     }
 
     private static Judgment violation(double confidence) {

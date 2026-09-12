@@ -29,7 +29,8 @@ seeded on first start; existing rules are never overwritten.
 
 ## Operating modes
 
-Set `savonarola.operating-mode` in `application.yml`:
+Set `savonarola.operating-mode` in `application.yml` for the starting point; `/mode`
+changes it at runtime and that override survives restarts. Same for `/threshold`.
 
 | Mode | Behaviour |
 |---|---|
@@ -55,6 +56,9 @@ against Telegram, never read from config.
 | `/rulebook update [link\|text]` | Compile the rulebook into rules. Reply to the message or file holding it, or pass a link. Nothing activates yet. |
 | `/rulebook approve\|reject <proposalId>` | Activate or discard a compiled rulebook |
 | `/rulebook pending` | List proposals awaiting review |
+| `/rule list\|enable\|disable <rule_id>` | List rules, or turn one on or off. Disabling keeps the rule and its examples. |
+| `/mode [LOG_ONLY\|ON_DEMAND_ACTION\|LIVE_ACTION]` | Show or change the operating mode |
+| `/threshold [0.0-1.0]` | Show or change the confidence threshold |
 
 ## Profiling
 
@@ -73,7 +77,7 @@ and works busiest-first.
 ## Not implemented yet
 
 - `/stats` — usage and accuracy reporting (SPEC 13)
-- Commands to toggle rules, mode, and thresholds at runtime (SPEC 12)
+
 
 ## Tests
 
