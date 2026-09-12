@@ -9,6 +9,7 @@ import com.github.stormino.savonarola.moderation.DecisionRepository;
 import com.github.stormino.savonarola.moderation.DecisionStatus;
 import com.github.stormino.savonarola.moderation.OperatingMode;
 import com.github.stormino.savonarola.store.MessageStoreService;
+import com.github.stormino.savonarola.store.StoredMessage;
 import com.github.stormino.savonarola.telegram.AdminCommand;
 import com.github.stormino.savonarola.telegram.AdminNotifier;
 import com.github.stormino.savonarola.telegram.AdminRegistry;
@@ -21,14 +22,7 @@ import org.telegram.telegrambots.meta.api.objects.message.Message;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * SPEC section 10 — an admin confirms, adjusts, or discards a pending decision.
- *
- * The command is refused outright in LOG_ONLY: that mode promises no action is possible,
- * not even manually. It is accepted in LIVE_ACTION as well as ON_DEMAND_ACTION, because
- * decisions that reach the top of the ladder are parked as PENDING in both modes and
- * would otherwise be unreachable.
- */
+/** SPEC section 10, which also explains why LIVE_ACTION accepts this command. */
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -93,7 +87,7 @@ public class ExecuteCommand implements AdminCommand {
         }
 
         String displayName = messageStore.find(decision.getChatId(), decision.getMessageId())
-                .map(m -> m.getSenderName())
+                .map(StoredMessage::getSenderName)
                 .orElse("l'utente");
 
         try {
@@ -118,11 +112,6 @@ public class ExecuteCommand implements AdminCommand {
                 + ".");
     }
 
-    /**
-     * Without an explicit duration the bot's own proposal is applied — except at the top
-     * of the ladder, where there is no proposal by design (SPEC section 9) and the admin
-     * has to state what they want.
-     */
     private Action resolveAction(Decision decision, String modifier) {
         Action suggested = decision.suggestedAction();
 

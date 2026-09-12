@@ -41,8 +41,7 @@ public class ModerationPipeline {
                 ? msg.getReplyToMessage().getFrom().getId()
                 : null;
 
-        // @Async swallows anything thrown from here, so a miss is logged and dropped
-        // rather than raised: judging a message we cannot quote is worse than not judging it.
+        // @Async swallows whatever is thrown here, so a miss is logged rather than raised.
         Optional<StoredMessage> stored = messageStore.find(chatId, msg.getMessageId());
         if (stored.isEmpty()) {
             log.warn("Message {} in chat {} was not persisted before judging — skipping",

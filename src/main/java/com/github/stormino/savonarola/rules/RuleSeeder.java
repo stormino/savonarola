@@ -10,14 +10,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Seeds the rules formalised in SPEC section 2.3 on first start.
- *
- * Definitions are in English (SPEC section 16) and are written as boundaries rather
- * than topics: the judge is told what does NOT cross the line as explicitly as what
- * does, because the group's own rulebook welcomes blunt disagreement.
- *
- * Existing rules are never overwritten — once admins have curated a rule through
- * /regolamento aggiorna or /train, this seeder must not undo that work.
+ * Seeds SPEC section 2.3 on first start. Definitions state what does NOT cross the line
+ * as explicitly as what does, because the rulebook protects blunt disagreement.
+ * Existing rules are never overwritten: a restart must not undo admin curation.
  */
 @Component
 @Slf4j

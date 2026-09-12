@@ -45,11 +45,7 @@ public class Decision {
         return create(chatId, messageId, subjectUserId, judgment, suggested, DecisionStatus.PENDING);
     }
 
-    /**
-     * A dry-run record: LOG_ONLY still judges, and without a row the mode whose whole
-     * purpose is measuring accuracy before granting real power would leave nothing to
-     * measure. LOGGED never becomes actionable and never counts toward the ladder.
-     */
+    /** Dry-run record, so LOG_ONLY leaves something to measure. Never actionable. */
     public static Decision logged(long chatId, long messageId, long subjectUserId,
                                   Judgment judgment, Action wouldHaveSuggested) {
         return create(chatId, messageId, subjectUserId, judgment, wouldHaveSuggested,
@@ -88,7 +84,6 @@ public class Decision {
         this.resolvedAt = Instant.now();
     }
 
-    /** True when an admin executed something other than what the bot proposed. */
     public boolean wasModified() {
         return status == DecisionStatus.EXECUTED
                 && (actualActionType != suggestedActionType

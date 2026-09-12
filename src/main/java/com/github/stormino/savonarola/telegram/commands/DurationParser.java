@@ -3,7 +3,6 @@ package com.github.stormino.savonarola.telegram.commands;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Parses the duration= override an admin can attach to /execute (e.g. 10m, 2h, 1d). */
 final class DurationParser {
 
     private static final Pattern SPEC = Pattern.compile("^(\\d+)([mhd])$");

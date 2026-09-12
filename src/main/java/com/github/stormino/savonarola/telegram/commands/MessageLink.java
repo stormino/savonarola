@@ -5,14 +5,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A t.me message link, as pasted by an admin into /train.
- *
- * Private supergroups produce https://t.me/c/<internalId>/<messageId>, where the real
- * chat id is the internal id prefixed with -100. Forum topics add a thread segment
- * (/c/<internalId>/<threadId>/<messageId>), so the message id is always the last
- * segment. Public links (https://t.me/<username>/<messageId>) carry a username the bot
- * API will not resolve to a chat id, so chatId stays empty and the caller substitutes
- * the configured main chat — the only chat whose messages are stored anyway.
+ * A t.me message link. In /c/ links the real chat id is the path segment prefixed with
+ * -100; public links carry a username the bot API will not resolve, so chatId stays
+ * empty and the caller substitutes the main chat — the only chat whose messages exist.
  */
 public record MessageLink(Long chatId, long messageId) {
 
@@ -43,7 +38,6 @@ public record MessageLink(Long chatId, long messageId) {
         return Optional.empty();
     }
 
-    /** The chat this link points at, falling back to the main group for public links. */
     public long resolveChatId(long mainChatId) {
         return chatId != null ? chatId : mainChatId;
     }

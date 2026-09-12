@@ -1,10 +1,8 @@
 package com.github.stormino.savonarola.telegram;
 
 /**
- * Admin notifications are sent with parseMode=HTML, so every interpolated value has
- * to be escaped. Most of them are untrusted: message text is whatever a member wrote,
- * and reasoning is whatever the model wrote. An unescaped '<' makes Telegram reject
- * the whole send, which would silently drop the verdict the admins are waiting for.
+ * Admin notifications use parseMode=HTML and interpolate member text and model output.
+ * One unescaped '<' makes Telegram reject the send, silently dropping the verdict.
  */
 public final class Html {
 

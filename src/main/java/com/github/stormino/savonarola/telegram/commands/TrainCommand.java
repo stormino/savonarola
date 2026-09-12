@@ -17,10 +17,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * SPEC section 8 — /train &lt;rule_id&gt; &lt;positive|negative&gt; &lt;message_link&gt;
- *
- * Labelling a message never sanctions it, however clear the violation: training enriches
- * the rulebook for future judgments and nothing else.
+ * SPEC section 8. Labelling a message never sanctions it, however clear the violation:
+ * training enriches the rulebook for future judgments and nothing else.
  */
 @Component
 @RequiredArgsConstructor

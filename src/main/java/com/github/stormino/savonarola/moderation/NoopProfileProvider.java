@@ -1,10 +1,8 @@
 package com.github.stormino.savonarola.moderation;
 
 /**
- * Placeholder until the nightly profile job exists. Registered as a fallback bean in
- * {@link com.github.stormino.savonarola.config.ProfileConfig} rather than annotated
- * directly: @ConditionalOnMissingBean is only evaluated on @Bean methods, so on a
- * @Component it would have silently done nothing.
+ * Placeholder until the nightly profile job exists. Declared as a @Bean in ProfileConfig,
+ * not a @Component: @ConditionalOnMissingBean is only evaluated on @Bean methods.
  */
 public class NoopProfileProvider implements ProfileProvider {
 
