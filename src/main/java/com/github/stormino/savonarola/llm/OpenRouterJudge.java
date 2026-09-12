@@ -28,8 +28,9 @@ public class OpenRouterJudge implements LlmJudge {
         LlmException last = null;
         for (String model : props.llm().judgmentModels()) {
             try {
-                String raw = client.complete(model, system, user);
+                String raw = client.complete(model, LlmCallType.JUDGMENT, system, user);
                 Judgment judgment = parse(raw);
+                if (last != null) health.recordFallback();
                 health.recordSuccess();
                 return judgment;
             } catch (LlmException e) {

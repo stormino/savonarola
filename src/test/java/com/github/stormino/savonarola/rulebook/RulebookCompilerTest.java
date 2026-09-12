@@ -1,6 +1,7 @@
 package com.github.stormino.savonarola.rulebook;
 
 import com.github.stormino.savonarola.TestProperties;
+import com.github.stormino.savonarola.llm.LlmCallType;
 import com.github.stormino.savonarola.llm.LlmClient;
 import com.github.stormino.savonarola.llm.LlmException;
 import com.github.stormino.savonarola.moderation.OperatingMode;
@@ -13,6 +14,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -31,7 +33,7 @@ class RulebookCompilerTest {
     }
 
     private void responds(String model, String payload) {
-        when(client.complete(eq(model), anyString(), anyString())).thenReturn(payload);
+        when(client.complete(eq(model), any(), anyString(), anyString())).thenReturn(payload);
     }
 
     @Test
@@ -67,12 +69,12 @@ class RulebookCompilerTest {
 
         compiler.compile("testo");
 
-        verify(client).complete(eq("primary"), anyString(), anyString());
+        verify(client).complete(eq("primary"), eq(LlmCallType.RULEBOOK), anyString(), anyString());
     }
 
     @Test
     void fallsBackToTheSecondaryModel() {
-        when(client.complete(eq("primary"), anyString(), anyString()))
+        when(client.complete(eq("primary"), any(), anyString(), anyString()))
                 .thenThrow(new LlmException("rate limited"));
         responds("fallback", """
                 {"rules": [{"id": "r", "severity": "LOW", "requiresHistory": false,

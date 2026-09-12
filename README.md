@@ -59,6 +59,7 @@ against Telegram, never read from config.
 | `/rule list\|enable\|disable <rule_id>` | List rules, or turn one on or off. Disabling keeps the rule and its examples. |
 | `/mode [LOG_ONLY\|ON_DEMAND_ACTION\|LIVE_ACTION]` | Show or change the operating mode |
 | `/threshold [0.0-1.0]` | Show or change the confidence threshold |
+| `/stats [today\|week\|month\|all]` | Volume, actions, LLM spend and health. On demand only — nothing is ever posted on a schedule. |
 
 ## Profiling
 
@@ -76,8 +77,9 @@ and works busiest-first.
 
 ## Not implemented yet
 
-- `/stats` — usage and accuracy reporting (SPEC 13)
-
+Nothing from SPEC is outstanding. Section 17 still lists open design questions —
+notably the escalation ladder's scope (per user vs per rule) and whether the action
+announcement should tag the user — which are decisions rather than missing code.
 
 ## Tests
 

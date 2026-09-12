@@ -29,6 +29,7 @@ public class ModerationPipeline {
     private final LlmJudge judge;
     private final EscalationService escalation;
     private final DecisionRouter router;
+    private final PipelineMetrics metrics;
 
     @Async
     public void process(Message msg) {
@@ -51,6 +52,7 @@ public class ModerationPipeline {
         StoredMessage target = stored.get();
 
         List<StoredMessage> extendedHistory = maybeExtendedHistory(chatId, senderId, targetId);
+        metrics.recordJudged(!extendedHistory.isEmpty());
 
         JudgmentInput input = new JudgmentInput(
                 rules,

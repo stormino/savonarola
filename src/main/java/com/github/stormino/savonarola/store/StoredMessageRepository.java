@@ -71,5 +71,7 @@ public interface StoredMessageRepository extends JpaRepository<StoredMessage, Lo
         long getInteractions();
     }
 
+    long countByChatIdAndSentAtAfter(long chatId, Instant since);
+
     void deleteBySentAtBefore(Instant cutoff);
 }

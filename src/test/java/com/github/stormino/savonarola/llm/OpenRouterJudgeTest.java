@@ -12,6 +12,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -41,7 +42,7 @@ class OpenRouterJudgeTest {
     }
 
     private void respondsWith(String model, String payload) {
-        when(client.complete(eq(model), anyString(), anyString())).thenReturn(payload);
+        when(client.complete(eq(model), any(), anyString(), anyString())).thenReturn(payload);
     }
 
     @Test
@@ -75,7 +76,7 @@ class OpenRouterJudgeTest {
 
     @Test
     void fallsBackToTheSecondaryModelWhenThePrimaryFails() {
-        when(client.complete(eq("primary"), anyString(), anyString()))
+        when(client.complete(eq("primary"), any(), anyString(), anyString()))
                 .thenThrow(new LlmException("429 rate limited"));
         respondsWith("fallback", """
                 {"violated": false, "ruleId": null, "confidence": 0.0, "reasoning": "Ok."}
@@ -87,8 +88,32 @@ class OpenRouterJudgeTest {
     }
 
     @Test
+    void countsAFallbackSoDegradationIsVisibleBeforeAnythingBreaks() {
+        when(client.complete(eq("primary"), any(), anyString(), anyString()))
+                .thenThrow(new LlmException("429 rate limited"));
+        respondsWith("fallback", """
+                {"violated": false, "ruleId": null, "confidence": 0.0, "reasoning": "Ok."}
+                """);
+
+        judge.judge(input());
+
+        verify(health).recordFallback();
+    }
+
+    @Test
+    void countsNoFallbackWhenThePrimaryAnswers() {
+        respondsWith("primary", """
+                {"violated": false, "ruleId": null, "confidence": 0.0, "reasoning": "Ok."}
+                """);
+
+        judge.judge(input());
+
+        verify(health, never()).recordFallback();
+    }
+
+    @Test
     void reportsDegradationWhenEveryModelFails() {
-        when(client.complete(anyString(), anyString(), anyString()))
+        when(client.complete(anyString(), any(), anyString(), anyString()))
                 .thenThrow(new LlmException("upstream down"));
 
         assertThatThrownBy(() -> judge.judge(input())).isInstanceOf(LlmException.class);

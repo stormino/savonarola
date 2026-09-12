@@ -94,6 +94,11 @@ is measuring accuracy before the bot is given real power.
 Below the confidence threshold the bot flags without proposing a penalty: it does not
 propose a sentence it isn't confident in.
 
+**`SettingsService` is the authority on the mode and the threshold, not the config
+record.** `/mode` and `/threshold` persist overrides that survive restarts, so
+`props.operatingMode()` is the declared starting point and answers the wrong question at
+runtime. Read both through `SettingsService`.
+
 ## Traps
 
 - **Admin messages are sent with `parseMode=HTML`.** Every interpolated value — member
@@ -110,6 +115,9 @@ propose a sentence it isn't confident in.
 - **The message store exists because the Bot API cannot fetch an arbitrary message by
   id.** If the bot did not see a message go past, it does not have it — `/train` on an
   old link legitimately fails, and that is reported, not worked around.
+- **Some `/stats` figures are in-memory and say so.** Token spend and the extended-query
+  rate are counters reset by a restart, reported as "since startup"; volume and actions
+  come from persisted rows and honour the requested period. Don't quietly mix the two.
 - **Profiles are cold until the batch job has run.** `ProfileService` reads only what
   `ProfileBatchJob` wrote overnight, so on a fresh install `profileFor` returns null and
   `negativeInteractionCount` returns 0 — the judge works from the context window alone and

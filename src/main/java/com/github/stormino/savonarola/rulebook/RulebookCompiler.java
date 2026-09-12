@@ -3,6 +3,7 @@ package com.github.stormino.savonarola.rulebook;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.stormino.savonarola.config.SavonarolaProperties;
+import com.github.stormino.savonarola.llm.LlmCallType;
 import com.github.stormino.savonarola.llm.LlmClient;
 import com.github.stormino.savonarola.llm.LlmException;
 import com.github.stormino.savonarola.moderation.Severity;
@@ -63,7 +64,7 @@ public class RulebookCompiler {
         LlmException last = null;
         for (String model : props.llm().judgmentModels()) {
             try {
-                return parse(client.complete(model, SYSTEM, prompt));
+                return parse(client.complete(model, LlmCallType.RULEBOOK, SYSTEM, prompt));
             } catch (LlmException e) {
                 log.warn("Rulebook compilation on {} failed: {}", model, e.getMessage());
                 last = e;

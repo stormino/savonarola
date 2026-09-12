@@ -325,6 +325,8 @@ statsCommand:
       - errori consecutivi, fallback attivati, downtime
 ```
 
+Volume e azioni sono ricavati dalle decisioni e dai messaggi persistiti, quindi rispettano il periodo richiesto. **Consumo LLM e percentuale di query estesa sono invece contatori in memoria, riportati "dall'avvio"**: il denominatore della query estesa è ogni messaggio giudicato, e una riga per messaggio giudicato costerebbe più di quanto valga il dato. Il report lo dichiara esplicitamente.
+
 ---
 
 ## 14. Infrastruttura LLM — OpenRouter

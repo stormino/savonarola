@@ -1,6 +1,7 @@
 package com.github.stormino.savonarola.profile;
 
 import com.github.stormino.savonarola.TestProperties;
+import com.github.stormino.savonarola.llm.LlmCallType;
 import com.github.stormino.savonarola.llm.LlmClient;
 import com.github.stormino.savonarola.llm.LlmException;
 import com.github.stormino.savonarola.moderation.OperatingMode;
@@ -13,6 +14,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -36,7 +38,7 @@ class ProfileSummarizerTest {
     }
 
     private void responds(String payload) {
-        when(client.complete(anyString(), anyString(), anyString())).thenReturn(payload);
+        when(client.complete(anyString(), any(), anyString(), anyString())).thenReturn(payload);
     }
 
     @Test
@@ -45,7 +47,7 @@ class ProfileSummarizerTest {
 
         summarizer.summarizeTone(sample());
 
-        verify(client).complete(eq("profile"), anyString(), anyString());
+        verify(client).complete(eq("profile"), eq(LlmCallType.PROFILE), anyString(), anyString());
     }
 
     @Test
@@ -93,7 +95,7 @@ class ProfileSummarizerTest {
 
     @Test
     void degradesToNoProfileWhenTheModelIsUnavailable() {
-        when(client.complete(anyString(), anyString(), anyString()))
+        when(client.complete(anyString(), any(), anyString(), anyString()))
                 .thenThrow(new LlmException("rate limited"));
 
         assertThat(summarizer.summarizeTone(sample())).isEmpty();
@@ -115,7 +117,7 @@ class ProfileSummarizerTest {
         summarizer.assessPair("@tizio", "@caio", sample());
 
         ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
-        verify(client).complete(anyString(), anyString(), prompt.capture());
+        verify(client).complete(anyString(), any(), anyString(), prompt.capture());
         assertThat(prompt.getValue()).contains("FROM @tizio IN REPLY TO @caio");
     }
 }

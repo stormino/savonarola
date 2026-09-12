@@ -27,7 +27,7 @@ public class OpenRouterClient implements LlmClient {
     }
 
     @Override
-    public String complete(String model, String systemPrompt, String userPrompt) {
+    public String complete(String model, LlmCallType callType, String systemPrompt, String userPrompt) {
         Map<String, Object> body = Map.of(
                 "model", model,
                 "messages", java.util.List.of(
@@ -46,7 +46,7 @@ public class OpenRouterClient implements LlmClient {
             if (response == null || !response.has("choices")) {
                 throw new LlmException("Malformed response from model " + model);
             }
-            usageTracker.record(model, response.path("usage"));
+            usageTracker.record(model, callType, response.path("usage"));
             return response.path("choices").get(0).path("message").path("content").asText();
         } catch (LlmException e) {
             throw e;

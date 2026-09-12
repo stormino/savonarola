@@ -18,6 +18,7 @@ public class HealthMonitor {
     private final AdminNotifier notifier;
 
     private final AtomicInteger consecutiveFailures = new AtomicInteger();
+    private final AtomicInteger fallbacks = new AtomicInteger();
     private final AtomicBoolean degraded = new AtomicBoolean();
     private volatile Instant lastSuccess = Instant.now();
     private volatile String lastError;
@@ -40,6 +41,12 @@ public class HealthMonitor {
         }
     }
 
+    /** The primary model failed but a later one answered: degraded, not down. */
+    public void recordFallback() {
+        fallbacks.incrementAndGet();
+    }
+
+    public int getFallbacks() { return fallbacks.get(); }
     public int getConsecutiveFailures() { return consecutiveFailures.get(); }
     public boolean isDegraded() { return degraded.get(); }
     public Instant getLastSuccess() { return lastSuccess; }

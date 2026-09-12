@@ -3,6 +3,7 @@ package com.github.stormino.savonarola.profile;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.stormino.savonarola.config.SavonarolaProperties;
+import com.github.stormino.savonarola.llm.LlmCallType;
 import com.github.stormino.savonarola.llm.LlmClient;
 import com.github.stormino.savonarola.llm.LlmException;
 import com.github.stormino.savonarola.store.StoredMessage;
@@ -79,7 +80,7 @@ public class ProfileSummarizer {
 
     private Optional<JsonNode> call(String system, String userPrompt) {
         try {
-            String raw = client.complete(props.llm().profileModel(), system, userPrompt);
+            String raw = client.complete(props.llm().profileModel(), LlmCallType.PROFILE, system, userPrompt);
             String cleaned = raw.trim()
                     .replaceAll("^```(?:json)?", "")
                     .replaceAll("```$", "")

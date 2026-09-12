@@ -104,5 +104,6 @@ public class Decision {
     public DecisionStatus getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
     public Long getResolvedBy() { return resolvedBy; }
+    public int getSuggestedRung() { return suggestedRung; }
     public int getActualDurationMinutes() { return actualDurationMinutes; }
 }
