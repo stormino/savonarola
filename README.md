@@ -51,13 +51,26 @@ against Telegram, never read from config.
 | `/execute <decisionId> duration=<Nm\|Nh\|Nd>` | Apply it with a different duration, recorded as a modification |
 | `/execute <decisionId> dismiss` | Discard the decision, no action |
 | `/train <rule_id> <positive\|negative> <link>` | Add a labelled example to a rule. Never retroactive. |
+| `/dynamic <@a\|id> <@b\|id> <description>` | Record a known dynamic between two members. The batch job never overwrites it. |
+
+## Profiling
+
+A nightly job (`savonarola.profile.cron`, 04:00 by default) summarises how each active
+member typically writes and how often one member is hostile toward another. Those
+summaries are what let the judge tell established banter from someone being targeted.
+
+Profiles are cold on a fresh install: until the first run, judgments work from the recent
+conversation window alone and the extended-history lookup never fires. `/dynamic` is the
+way to seed what the bot has no history to infer yet.
+
+Each user and each pair costs one call on the cheap model, against the same free-tier
+budget as live judging, so the run is capped (`max-users-per-run`, `max-pairs-per-run`)
+and works busiest-first.
 
 ## Not implemented yet
 
 - `/regolamento aggiorna` — LLM-assisted compilation of the rulebook with admin approval (SPEC 2.1)
 - `/stats` — usage and accuracy reporting (SPEC 13)
-- Batch user/pair profiling; `ProfileProvider` is currently a null object, so the judge
-  runs without tone priors and the extended-history lookup never triggers (SPEC 7)
 - Commands to toggle rules, mode, and thresholds at runtime (SPEC 12)
 
 ## Tests

@@ -27,6 +27,7 @@ public final class TestProperties {
                 new SavonarolaProperties.MessageStore(90, 15),
                 new SavonarolaProperties.Llm("http://localhost", "key",
                         List.of("primary", "fallback"), "profile"),
+                new SavonarolaProperties.Profile(true, "0 0 4 * * *", 30, 20, 8, 25, 15, 60),
                 new SavonarolaProperties.Health(3, "SYSTEM"),
                 new SavonarolaProperties.ActionAnnouncement(
                         true, "Utente {user} mutato per {duration}.", true));

@@ -175,7 +175,7 @@ Necessario perché l'API bot di Telegram non offre un modo di recuperare un mess
 
 ### 7.1 Generazione — ibrida
 
-- **Batch periodico** (es. notturno): per ogni utente attivo, sintesi leggera del tono tipico; per ogni coppia che interagisce spesso, contatore di interazioni negative negli ultimi 30 giorni + eventuale nota sintetica.
+- **Batch periodico** (es. notturno): per ogni utente attivo, sintesi leggera del tono tipico; per ogni coppia che interagisce spesso, contatore di interazioni negative negli ultimi 30 giorni + eventuale nota sintetica. Ogni utente e ogni coppia costano una chiamata LLM sullo stesso budget del giudizio live (sezione 14), quindi il run è limitato per numero di utenti e di coppie e procede dai più attivi: profili parziali sono accettabili, un giudice a secco no.
 - **Context live**: la finestra degli ultimi 15 messaggi, sempre inclusa nella chiamata di giudizio, cattura variazioni recenti non ancora riflesse nel profilo batch.
 
 ### 7.2 Struttura
@@ -191,15 +191,19 @@ userProfile:
   lastUpdated: <timestamp>
 
 pairSignal:
-  userA: <string>
-  userB: <string>
+  senderId: <string>
+  targetId: <string>
   negativeInteractionCount: <int>   # finestra: ultimi 30 giorni
   note: "<opzionale>"
 ```
 
+Il `pairSignal` è **direzionale**: il trigger della sezione 7.4 è `negativeInteractionCount(sender, target)`, e chi prende di mira chi è tutto il segnale. Un signal che il batch non ha aggiornato entro la finestra di rilevazione viene ignorato, così una coppia non resta segnalata dopo aver smesso di interagire.
+
 ### 7.3 Annotazione admin
 
-Gli admin possono correggere o seedare manualmente `knownDynamics` (es. "X e Y hanno una rivalità scherzosa di lunga data") — utile soprattutto in fase di avvio, prima che il bot abbia abbastanza storico per inferirlo da solo.
+Gli admin possono correggere o seedare manualmente `knownDynamics` con `/dynamic` (es. "X e Y hanno una rivalità scherzosa di lunga data") — utile soprattutto in fase di avvio, prima che il bot abbia abbastanza storico per inferirlo da solo.
+
+Un'annotazione admin non viene mai sovrascritta dalle inferenze del batch: la sezione esiste proprio perché all'inizio il bot sbaglia queste letture.
 
 ### 7.4 Query estesa — trigger
 
@@ -282,6 +286,7 @@ Tutti disponibili solo sulla chat Admin schiaffers, permessi verificati dinamica
 |---|---|
 | `/regolamento aggiorna` (testo/file) | Trigger compilazione LLM-assisted del RuleSet, con review/approve |
 | `/train <rule_id> <positive\|negative> <link>` | Aggiunge un esempio a una regola |
+| `/dynamic <@a\|id> <@b\|id> <descrizione>` | Seeda o corregge una dinamica nota tra due utenti (sezione 7.3) |
 | `/execute <decisionId> [duration=...\|dismiss]` | Esegue/modifica/scarta una decisione in `ON_DEMAND_ACTION` |
 | `/stats [today\|week\|month\|all]` | Statistiche on-demand (sezione 13) |
 | *(da definire)* | Toggle enabled/disabled per singola regola, cambio `operatingMode`, cambio soglia di confidenza |

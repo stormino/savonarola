@@ -14,6 +14,7 @@ public record SavonarolaProperties(
         Escalation escalation,
         MessageStore messageStore,
         Llm llm,
+        Profile profile,
         Health health,
         ActionAnnouncement actionAnnouncement
 ) {
@@ -27,6 +28,11 @@ public record SavonarolaProperties(
     public record Escalation(List<Integer> ladderMinutes, int decayAfterDays) {}
 
     public record MessageStore(int retentionDays, int contextWindowSize) {}
+
+    /** Caps exist because every user and every pair costs one call against a shared budget. */
+    public record Profile(boolean enabled, String cron, int activeWindowDays,
+                          int minMessagesForTone, int minInteractionsForPair,
+                          int maxUsersPerRun, int maxPairsPerRun, int maxMessagesPerSummary) {}
 
     public record Llm(String baseUrl, String apiKey, List<String> judgmentModels, String profileModel) {}
 

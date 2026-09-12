@@ -110,10 +110,11 @@ propose a sentence it isn't confident in.
 - **The message store exists because the Bot API cannot fetch an arbitrary message by
   id.** If the bot did not see a message go past, it does not have it — `/train` on an
   old link legitimately fails, and that is reported, not worked around.
-- **`ProfileProvider` is currently a null object.** `negativeInteractionCount` always
-  returns 0, so the extended-history lookup never fires and the history-dependent rules
-  cannot realistically trigger yet. Replacing it with a real bean (SPEC 7) automatically
-  displaces the no-op in `ProfileConfig`.
+- **Profiles are cold until the batch job has run.** `ProfileService` reads only what
+  `ProfileBatchJob` wrote overnight, so on a fresh install `profileFor` returns null and
+  `negativeInteractionCount` returns 0 — the judge works from the context window alone and
+  the extended-history lookup never fires. That is expected, not a bug. Pair signals also
+  decay: one the batch has not refreshed inside the detection window is ignored.
 
 ## Conventions
 

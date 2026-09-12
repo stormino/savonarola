@@ -30,5 +30,46 @@ public interface StoredMessageRepository extends JpaRepository<StoredMessage, Lo
                                          @Param("targetId") long targetId,
                                          @Param("since") Instant since);
 
+    List<StoredMessage> findByChatIdAndSenderIdAndSentAtAfterOrderBySentAtDesc(
+            long chatId, long senderId, Instant since, Pageable pageable);
+
+    /** Resolves a @username an admin typed back to the user id the bot last saw it on. */
+    Optional<StoredMessage> findFirstBySenderNameOrderBySentAtDesc(String senderName);
+
+    /** Busiest senders first, so a capped batch run profiles the people who matter most. */
+    @Query("""
+            select m.senderId
+            from StoredMessage m
+            where m.chatId = :chatId and m.sentAt > :since
+            group by m.senderId
+            having count(m) >= :minMessages
+            order by count(m) desc
+            """)
+    List<Long> findActiveSenders(@Param("chatId") long chatId,
+                                 @Param("since") Instant since,
+                                 @Param("minMessages") long minMessages,
+                                 Pageable pageable);
+
+    /** Directed pairs that interact often enough to be worth spending an LLM call on. */
+    @Query("""
+            select m.senderId as senderId, m.replyToUserId as targetId, count(m) as interactions
+            from StoredMessage m
+            where m.chatId = :chatId and m.sentAt > :since
+              and m.replyToUserId is not null and m.replyToUserId <> m.senderId
+            group by m.senderId, m.replyToUserId
+            having count(m) >= :minInteractions
+            order by count(m) desc
+            """)
+    List<PairCount> findFrequentPairs(@Param("chatId") long chatId,
+                                      @Param("since") Instant since,
+                                      @Param("minInteractions") long minInteractions,
+                                      Pageable pageable);
+
+    interface PairCount {
+        long getSenderId();
+        long getTargetId();
+        long getInteractions();
+    }
+
     void deleteBySentAtBefore(Instant cutoff);
 }
