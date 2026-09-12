@@ -133,6 +133,10 @@ propose a sentence it isn't confident in.
   options you won't take. This matters most where a human has to act on the text:
   questions to the user, PR bodies, and the bot's own admin-facing output — an admin
   reading a verdict is deciding something, not browsing.
+- **Always write tests, and make them mean something.** Unit, integration, UI-automated
+  or performance — whichever fits what changed. A test that restates the implementation
+  or asserts a mock was called proves nothing; test the behaviour that would actually
+  break, including the path where it fails.
 - **Run `mvn test` before every commit.** Never commit on a red or unrun suite.
 - **Ask before adding a Maven dependency.** The footprint stays deliberate; no new
   libraries slipped in as a side effect of a feature.
