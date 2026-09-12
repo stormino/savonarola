@@ -4,6 +4,7 @@ import com.github.stormino.savonarola.config.SavonarolaProperties;
 import com.github.stormino.savonarola.moderation.OperatingMode;
 
 import java.util.List;
+import java.util.Map;
 
 /** Fixture for the configuration record, so tests only state what they care about. */
 public final class TestProperties {
@@ -25,8 +26,9 @@ public final class TestProperties {
                 new SavonarolaProperties.PatternDetection(3, 30),
                 new SavonarolaProperties.Escalation(List.of(5, 30, 120, 1440), 30),
                 new SavonarolaProperties.MessageStore(90, 15),
-                new SavonarolaProperties.Llm("http://localhost", "key",
-                        List.of("primary", "fallback"), "profile"),
+                new SavonarolaProperties.Llm("test", Map.of("test",
+                        new SavonarolaProperties.Llm.Provider("http://localhost", "key", Map.of(),
+                                List.of("primary", "fallback"), "profile"))),
                 new SavonarolaProperties.Profile(true, "0 0 4 * * *", 30, 20, 8, 25, 15, 60),
                 new SavonarolaProperties.Health(3, "SYSTEM"),
                 new SavonarolaProperties.ActionAnnouncement(

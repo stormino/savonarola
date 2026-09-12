@@ -62,7 +62,7 @@ public class RulebookCompiler {
         String prompt = "## RULEBOOK (Italian)\n" + rulebookText;
 
         LlmException last = null;
-        for (String model : props.llm().judgmentModels()) {
+        for (String model : props.llm().active().judgmentModels()) {
             try {
                 return parse(client.complete(model, LlmCallType.RULEBOOK, SYSTEM, prompt));
             } catch (LlmException e) {

@@ -16,7 +16,7 @@ signs off until it has earned the right to sign its own.
 ## Requirements
 
 - A Telegram group and a separate private chat for admins
-- An [OpenRouter](https://openrouter.ai) API key
+- An API key for an LLM provider — [Groq](https://console.groq.com/keys) by default
 - Docker, or JDK 21 and Maven to run from source
 
 ## 1. Create the bot
@@ -51,8 +51,9 @@ cp .env.example .env
 | `SAV_BOT_TOKEN` | yes | Token from @BotFather |
 | `SAV_MAIN_CHAT_ID` | yes | The group being moderated |
 | `SAV_ADMIN_CHAT_ID` | yes | The private admin chat |
-| `OPENROUTER_API_KEY` | yes | https://openrouter.ai/keys |
-| `SAV_PRIMARY_MODEL` | no | Judgment model. The free OpenRouter catalogue changes without notice — check yours is still live. |
+| `GROQ_API_KEY` | yes | https://console.groq.com/keys (or `OPENROUTER_API_KEY` if you switch provider) |
+| `SAV_LLM_PROVIDER` | no | `groq` (default) or `openrouter` |
+| `SAV_PRIMARY_MODEL` | no | Judgment model. Free catalogues change without notice — check yours is still live. |
 | `SAV_FALLBACK_MODEL` | no | Used when the primary is rate-limited or down |
 | `SAV_PROFILE_MODEL` | no | Cheap model for nightly profiling |
 | `SAV_DATA_DIR` | no | Where the H2 database file lives (`/data` in Docker) |

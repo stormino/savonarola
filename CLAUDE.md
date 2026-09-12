@@ -5,7 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 A Telegram moderation bot for an Italian tennis-fan group, built on Spring Boot 3.4 /
-Java 21, judging messages with an LLM via OpenRouter.
+Java 21, judging messages with an LLM. Groq is the default provider; OpenRouter is
+configured alongside it.
 
 **`SPEC.md` is the source of truth.** It is written in Italian and is more detailed than
 the code. Before changing behaviour, find the relevant section and follow it; when the
@@ -111,11 +112,15 @@ runtime. Read both through `SettingsService`.
   are waiting on vanishes silently. There is a regression test for this.
 - **`ModerationPipeline.process` is `@Async void`**, so anything thrown there is
   swallowed. Log and return instead of throwing.
-- **LLM output is untrusted.** `OpenRouterJudge` strips markdown fences, tolerates
+- **LLM output is untrusted.** `ModelChainJudge` strips markdown fences, tolerates
   missing fields, rejects a claimed violation with no rule id, and falls back across the
-  configured models in order. Free OpenRouter models change without notice and are rate
-  limited around 20 req/min and 200/day *per model*, so never hard-code a model and keep
-  the `LlmClient` / `LlmJudge` seams intact.
+  configured models in order. Free model catalogues change without notice and are rate
+  limited per model, so never hard-code a model and keep the `LlmClient` / `LlmJudge`
+  seams intact.
+- **Adding a provider is configuration, not code** — while it speaks OpenAI's
+  `/chat/completions`. `OpenAiCompatibleClient` covers Groq, OpenRouter and Mistral; one
+  that does not (Gemini) needs its own `LlmClient`. Only the active provider is ever
+  contacted; there is no routing between them yet.
 - **The message store exists because the Bot API cannot fetch an arbitrary message by
   id.** If the bot did not see a message go past, it does not have it — `/train` on an
   old link legitimately fails, and that is reported, not worked around.

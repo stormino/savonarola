@@ -50,12 +50,27 @@ savonarola:
     max-messages-per-summary: 60
 
   llm:
-    base-url: https://openrouter.ai/api/v1
-    api-key: ${OPENROUTER_API_KEY}
-    judgment-models:
-      - ${SAV_PRIMARY_MODEL:thinkingmachines/inkling}
-      - ${SAV_FALLBACK_MODEL:nvidia/nemotron-3-super}
-    profile-model: ${SAV_PROFILE_MODEL:thinkingmachines/inkling-small}
+    # Which provider is live. Both are OpenAI-shaped; only the active one is contacted.
+    provider: ${SAV_LLM_PROVIDER:groq}
+    providers:
+      groq:
+        base-url: https://api.groq.com/openai/v1
+        api-key: ${GROQ_API_KEY:}
+        # VERIFY these ids against Groq's current model list before the first run:
+        # a wrong id fails every call, and the whole chain failing is the only symptom.
+        judgment-models:
+          - ${SAV_PRIMARY_MODEL:qwen/qwen3.6-27b}
+          - ${SAV_FALLBACK_MODEL:openai/gpt-oss-120b}
+        profile-model: ${SAV_PROFILE_MODEL:llama-3.1-8b-instant}
+      openrouter:
+        base-url: https://openrouter.ai/api/v1
+        api-key: ${OPENROUTER_API_KEY:}
+        headers:
+          X-Title: Savonarola
+        judgment-models:
+          - ${SAV_PRIMARY_MODEL:thinkingmachines/inkling}
+          - ${SAV_FALLBACK_MODEL:nvidia/nemotron-3-super}
+        profile-model: ${SAV_PROFILE_MODEL:thinkingmachines/inkling-small}
 
   health:
     consecutive-failure-threshold: 3

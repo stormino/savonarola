@@ -20,17 +20,17 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class OpenRouterJudgeTest {
+class ModelChainJudgeTest {
 
     private LlmClient client;
     private HealthMonitor health;
-    private OpenRouterJudge judge;
+    private ModelChainJudge judge;
 
     @BeforeEach
     void setUp() {
         client = mock(LlmClient.class);
         health = mock(HealthMonitor.class);
-        judge = new OpenRouterJudge(client, new JudgmentPromptBuilder(),
+        judge = new ModelChainJudge(client, new JudgmentPromptBuilder(),
                 TestProperties.with(OperatingMode.LOG_ONLY), health);
     }
 

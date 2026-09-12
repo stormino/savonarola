@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class OpenRouterJudge implements LlmJudge {
+public class ModelChainJudge implements LlmJudge {
 
     private final LlmClient client;
     private final JudgmentPromptBuilder prompts;
@@ -26,7 +26,7 @@ public class OpenRouterJudge implements LlmJudge {
         String user = prompts.userPrompt(input);
 
         LlmException last = null;
-        for (String model : props.llm().judgmentModels()) {
+        for (String model : props.llm().active().judgmentModels()) {
             try {
                 String raw = client.complete(model, LlmCallType.JUDGMENT, system, user);
                 Judgment judgment = parse(raw);

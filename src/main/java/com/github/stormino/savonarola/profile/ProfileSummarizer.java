@@ -80,7 +80,7 @@ public class ProfileSummarizer {
 
     private Optional<JsonNode> call(String system, String userPrompt) {
         try {
-            String raw = client.complete(props.llm().profileModel(), LlmCallType.PROFILE, system, userPrompt);
+            String raw = client.complete(props.llm().active().profileModel(), LlmCallType.PROFILE, system, userPrompt);
             String cleaned = raw.trim()
                     .replaceAll("^```(?:json)?", "")
                     .replaceAll("```$", "")
