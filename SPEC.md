@@ -79,6 +79,8 @@ Sotto soglia di confidenza, in tutte le modalità (tranne `LOG_ONLY`, dove tutto
 
 ### 4.1 Flusso per messaggio
 
+**I messaggi modificati non vengono giudicati** (deciso). Il bot giudica alla ricezione: modificare un insulto dopo non annulla il giudizio già dato. Resta scoperto il caso inverso — messaggio innocuo poi modificato in insulto — accettato consapevolmente: la chat è matura e il costo di una chiamata LLM per ogni correzione di refuso non lo giustifica.
+
 ```
 Messaggio in arrivo
   → salvato nel message store (sezione 6)
@@ -241,6 +243,7 @@ escalation:
   decayAfterDays: 30   # una striscia pulita di N giorni resetta la posizione sulla ladder
 ```
 
+- **Scope: globale per utente** (deciso). Qualunque decisione eseguita fa salire di un gradino, indipendentemente dalla regola violata. Chi continua a superare il limite scala, quale che sia il limite — è il modo in cui un admin umano legge un pattern. La posizione è derivata dalle sole decisioni `executed` dentro la finestra di decay, quindi non c'è un contatore separato da mantenere.
 - `admin_review` è il tetto della ladder: non è un'azione automatica, è il punto in cui il bot smette di agire da solo e passa la decisione a un admin.
 - **Il ban non è mai un'azione automatica del bot** in nessuna modalità — resta sempre una decisione umana, coerente col regolamento ("il ban è l'ultima risorsa").
 
@@ -276,7 +279,7 @@ actionAnnouncement:
   replyToOffendingMessage: true
 ```
 
-`{user}`: da decidere se menzione diretta (@username) o solo nome senza tag — non ancora deciso, default proposto: nome senza tag (meno invasivo), reversibile in config.
+`{user}`: **menzione diretta** (deciso). Chi ha uno username viene menzionato come `@username`; chi non ce l'ha tramite link `tg://user?id=`, che richiede parse mode HTML — il nome visualizzato viene quindi escapato, perché è testo scelto dall'utente.
 
 ---
 
@@ -365,9 +368,7 @@ Segnali monitorati: connettività/latenza OpenRouter, errori consecutivi sulla c
 
 - Schema dati completo e relazioni tra message store, profili, decision log (solo abbozzato qui, sezioni 5-7).
 - Logica esatta della compilazione LLM-assisted del regolamento: comportamento in caso di output ambiguo o parsing incerto.
-- Scope della escalation ladder: globale per utente vs per regola (esplicitamente rimandato).
-- `{user}` in `actionAnnouncement`: menzione o solo nome.
-- Soglia esatta di `negativeInteractionCount` per il trigger della query estesa.
-- Soglia esatta di `confidenceThreshold`.
+- Soglia esatta di `negativeInteractionCount` per il trigger della query estesa (default corrente: 3, da tarare sui dati del primo run in `LOG_ONLY`).
+- Soglia esatta di `confidenceThreshold` (default corrente: 0.6, modificabile a runtime con `/threshold`).
 - Comandi per toggle regole/modalità/soglie (elencati come necessari, non ancora specificati nel dettaglio).
 - Scaffolding tecnico (Spring Boot, dipendenze, struttura progetto) — volutamente rimandato a valle di questo documento.

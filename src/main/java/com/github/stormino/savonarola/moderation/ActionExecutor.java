@@ -1,6 +1,7 @@
 package com.github.stormino.savonarola.moderation;
 
 import com.github.stormino.savonarola.config.SavonarolaProperties;
+import com.github.stormino.savonarola.telegram.Html;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,20 +42,22 @@ public class ActionExecutor {
                 .untilDate((int) Instant.now().plus(Duration.ofMinutes(minutes)).getEpochSecond())
                 .build());
 
-        announce(chatId, displayName, offendingMessageId, minutes);
+        announce(chatId, userId, displayName, offendingMessageId, minutes);
     }
 
-    private void announce(long chatId, String displayName, long offendingMessageId, int minutes) {
+    private void announce(long chatId, long userId, String displayName,
+                          long offendingMessageId, int minutes) {
         var announcement = props.actionAnnouncement();
         if (!announcement.enabled()) return;
 
         String text = announcement.template()
-                .replace("{user}", displayName)
+                .replace("{user}", mention(userId, displayName))
                 .replace("{duration}", humanDuration(minutes));
 
         var builder = SendMessage.builder()
                 .chatId(String.valueOf(chatId))
-                .text(text);
+                .text(text)
+                .parseMode("HTML");
         if (announcement.replyToOffendingMessage()) {
             builder.replyToMessageId((int) offendingMessageId);
         }
@@ -63,6 +66,19 @@ public class ActionExecutor {
         } catch (TelegramApiException e) {
             log.error("Mute applied but announcement failed: {}", e.getMessage());
         }
+    }
+
+    /**
+     * SPEC 11: the announcement mentions the user. A @username is a mention on its own;
+     * anyone without one can only be mentioned through a tg://user link, which needs HTML
+     * — so the name is escaped, since it is whatever the member set it to.
+     */
+    private static String mention(long userId, String displayName) {
+        if (displayName != null && displayName.startsWith("@")) {
+            return Html.escape(displayName);
+        }
+        String name = displayName == null || displayName.isBlank() ? "l'utente" : displayName;
+        return "<a href=\"tg://user?id=" + userId + "\">" + Html.escape(name) + "</a>";
     }
 
     private static String humanDuration(int minutes) {
