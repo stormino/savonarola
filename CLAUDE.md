@@ -86,6 +86,11 @@ happens next*. Keep policy out of the pipeline and prompt assembly out of the ro
   `PENDING` and `DISMISSED` deliberately do not.
 - **One LLM call per message, covering all active rules at once** (SPEC 4.4) — cheaper,
   and the model sees the whole picture. Do not fan out per rule.
+- **The judgment prompt is capped, and the cap is load-bearing.** Every example of every
+  active rule is sent every time, and the free tier is bounded by tokens per day, so
+  without `maxExamplesPerRule` each `/train` would shrink how many messages can be
+  judged. The cap keeps both labels represented rather than just the newest — the
+  negatives are what stop the judge flagging criticism the rulebook protects.
 - **`reasoning` is always populated**, even when `violated: false`. It is what an admin
   reads to decide, so it is written in Italian while the rest of the prompt is English.
 

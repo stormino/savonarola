@@ -83,12 +83,8 @@ class ProfileBatchJobTest {
 
     @Test
     void doesNothingAtAllWhenProfilingIsDisabled() {
-        SavonarolaProperties props = TestProperties.with(OperatingMode.LOG_ONLY);
-        SavonarolaProperties disabled = new SavonarolaProperties(
-                props.operatingMode(), props.telegram(), props.decision(), props.patternDetection(),
-                props.escalation(), props.messageStore(), props.llm(),
-                new SavonarolaProperties.Profile(false, "0 0 4 * * *", 30, 20, 8, 25, 15, 60),
-                props.health(), props.actionAnnouncement());
+        SavonarolaProperties disabled = TestProperties.withProfile(
+                new SavonarolaProperties.Profile(false, "0 0 4 * * *", 30, 20, 8, 25, 15, 60));
 
         job(disabled).run();
 

@@ -41,4 +41,5 @@ public class RuleExample {
     public String getRuleId() { return ruleId; }
     public String getText() { return text; }
     public ExampleLabel getLabel() { return label; }
+    public Instant getAddedAt() { return addedAt; }
 }

@@ -33,6 +33,13 @@ savonarola:
     ladder-minutes: [5, 30, 120, 1440]   # beyond the last rung -> ADMIN_REVIEW
     decay-after-days: 30
 
+  rule-set:
+    # Every example of every active rule is sent on every judgment, so without a cap
+    # training would make each judgment steadily more expensive — and the Groq free tier
+    # is bounded by tokens per day, not requests. 6 per rule keeps the prompt near 2.7K
+    # tokens whatever the rulebook grows to. The full set stays in the database.
+    max-examples-per-rule: 6
+
   message-store:
     retention-days: 90
     context-window-size: 15

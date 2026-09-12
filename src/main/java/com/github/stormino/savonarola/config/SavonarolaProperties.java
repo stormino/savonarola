@@ -14,6 +14,7 @@ public record SavonarolaProperties(
         PatternDetection patternDetection,
         Escalation escalation,
         MessageStore messageStore,
+        RuleSet ruleSet,
         Llm llm,
         Profile profile,
         Health health,
@@ -29,6 +30,9 @@ public record SavonarolaProperties(
     public record Escalation(List<Integer> ladderMinutes, int decayAfterDays) {}
 
     public record MessageStore(int retentionDays, int contextWindowSize) {}
+
+    /** Caps what reaches the prompt, not what is stored: every example is sent every time. */
+    public record RuleSet(int maxExamplesPerRule) {}
 
     /** Caps exist because every user and every pair costs one call against a shared budget. */
     public record Profile(boolean enabled, String cron, int activeWindowDays,

@@ -231,6 +231,8 @@ negativeInteractionCount(sender, target) sopra soglia (media/bassa, per iniziare
 - Se non trovato (fuori retention): il bot segnala che non può recuperarlo.
 - **Nessuna azione retroattiva**: marcare un messaggio come esempio positivo non genera mai un'azione di moderazione su quel messaggio. Il training arricchisce il RuleSet per il futuro, punto.
 - Per l'MVP gli esempi vivono direttamente dentro il RuleSet (non in un dataset separato) — migrabile in futuro se il volume cresce molto.
+- **Al giudizio ne viene inviato un numero massimo per regola** (`maxExamplesPerRule`). Tutti gli esempi restano nel database: il cap riguarda solo il prompt. Senza, ogni `/train` renderebbe più caro ogni giudizio successivo, e il tetto del free tier è sui token al giorno, non sulle richieste — il comando che serve a rendere il bot più accurato ne ridurrebbe la capacità.
+- La selezione **tiene rappresentate entrambe le etichette**, non semplicemente le più recenti. Sono gli esempi `negative` a impedire che il giudice segnali la critica dura che il regolamento protegge: un cap basato solo sulla recenza lo sbilancerebbe verso la segnalazione non appena gli admin addestrassero una serie di violazioni.
 
 ---
 

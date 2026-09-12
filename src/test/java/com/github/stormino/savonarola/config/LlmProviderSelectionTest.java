@@ -44,11 +44,10 @@ class LlmProviderSelectionTest {
 
     @Test
     void refusesToStartWithoutAKeyForTheActiveProvider() {
-        var props = new SavonarolaProperties(null, null, null, null, null, null,
+        var props = com.github.stormino.savonarola.TestProperties.withLlm(
                 new SavonarolaProperties.Llm("groq", Map.of("groq",
                         new SavonarolaProperties.Llm.Provider("http://x", "  ", null,
-                                List.of("m"), "p"))),
-                null, null, null);
+                                List.of("m"), "p"))));
 
         assertThatThrownBy(() -> new LlmConfig().llmClient(props, null))
                 .isInstanceOf(IllegalStateException.class)
