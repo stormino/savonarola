@@ -1,11 +1,11 @@
 package com.github.stormino.savonarola.moderation;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.stereotype.Component;
-
-/** Placeholder until the nightly profile job exists. */
-@Component
-@ConditionalOnMissingBean(ProfileProvider.class)
+/**
+ * Placeholder until the nightly profile job exists. Registered as a fallback bean in
+ * {@link com.github.stormino.savonarola.config.ProfileConfig} rather than annotated
+ * directly: @ConditionalOnMissingBean is only evaluated on @Bean methods, so on a
+ * @Component it would have silently done nothing.
+ */
 public class NoopProfileProvider implements ProfileProvider {
 
     @Override

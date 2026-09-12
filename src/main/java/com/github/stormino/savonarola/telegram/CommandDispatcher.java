@@ -46,16 +46,24 @@ public class CommandDispatcher {
 
         AdminCommand command = commands.get(name);
         if (command == null) {
-            notifier.reply(msg, "Unknown command: " + name);
+            notifier.reply(msg, "Comando sconosciuto: <code>" + Html.escape(name) + "</code>"
+                    + "\nDisponibili: " + available());
             return;
         }
         try {
             command.handle(msg, args);
         } catch (IllegalArgumentException e) {
-            notifier.reply(msg, e.getMessage() + "\nUsage: " + command.usage());
+            notifier.reply(msg, Html.escape(e.getMessage())
+                    + "\nUso: <code>" + Html.escape(command.usage()) + "</code>");
         } catch (Exception e) {
             log.error("Command {} failed", name, e);
-            notifier.reply(msg, "Command failed: " + e.getMessage());
+            notifier.reply(msg, "Comando fallito: " + Html.escape(e.getMessage()));
         }
+    }
+
+    private String available() {
+        return commands.keySet().stream().sorted()
+                .map(n -> "<code>/" + n + "</code>")
+                .collect(Collectors.joining(", "));
     }
 }

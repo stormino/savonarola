@@ -42,6 +42,22 @@ public class Decision {
 
     public static Decision pending(long chatId, long messageId, long subjectUserId,
                                    Judgment judgment, Action suggested) {
+        return create(chatId, messageId, subjectUserId, judgment, suggested, DecisionStatus.PENDING);
+    }
+
+    /**
+     * A dry-run record: LOG_ONLY still judges, and without a row the mode whose whole
+     * purpose is measuring accuracy before granting real power would leave nothing to
+     * measure. LOGGED never becomes actionable and never counts toward the ladder.
+     */
+    public static Decision logged(long chatId, long messageId, long subjectUserId,
+                                  Judgment judgment, Action wouldHaveSuggested) {
+        return create(chatId, messageId, subjectUserId, judgment, wouldHaveSuggested,
+                DecisionStatus.LOGGED);
+    }
+
+    private static Decision create(long chatId, long messageId, long subjectUserId,
+                                   Judgment judgment, Action suggested, DecisionStatus status) {
         Decision d = new Decision();
         d.id = UUID.randomUUID();
         d.chatId = chatId;
@@ -53,7 +69,7 @@ public class Decision {
         d.suggestedActionType = suggested.type();
         d.suggestedDurationMinutes = suggested.durationMinutes();
         d.suggestedRung = suggested.rung();
-        d.status = DecisionStatus.PENDING;
+        d.status = status;
         d.createdAt = Instant.now();
         return d;
     }
@@ -72,6 +88,13 @@ public class Decision {
         this.resolvedAt = Instant.now();
     }
 
+    /** True when an admin executed something other than what the bot proposed. */
+    public boolean wasModified() {
+        return status == DecisionStatus.EXECUTED
+                && (actualActionType != suggestedActionType
+                    || actualDurationMinutes != suggestedDurationMinutes);
+    }
+
     public Action suggestedAction() {
         return new Action(suggestedActionType, suggestedDurationMinutes, suggestedRung);
     }
@@ -85,4 +108,6 @@ public class Decision {
     public String getReasoning() { return reasoning; }
     public DecisionStatus getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
+    public Long getResolvedBy() { return resolvedBy; }
+    public int getActualDurationMinutes() { return actualDurationMinutes; }
 }

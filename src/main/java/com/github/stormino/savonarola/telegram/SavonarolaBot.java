@@ -25,7 +25,7 @@ public class SavonarolaBot implements LongPollingSingleThreadUpdateConsumer {
     public void consume(Update update) {
         if (!update.hasMessage()) return;
         Message msg = update.getMessage();
-        if (!msg.hasText() || msg.getFrom() == null || msg.getFrom().getIsBot()) return;
+        if (!msg.hasText() || msg.getFrom() == null || Boolean.TRUE.equals(msg.getFrom().getIsBot())) return;
 
         long chatId = msg.getChatId();
 

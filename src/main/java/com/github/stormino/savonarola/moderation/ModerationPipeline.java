@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -40,8 +41,15 @@ public class ModerationPipeline {
                 ? msg.getReplyToMessage().getFrom().getId()
                 : null;
 
-        StoredMessage target = messageStore.find(chatId, msg.getMessageId())
-                .orElseThrow(() -> new IllegalStateException("Message not persisted before judging"));
+        // @Async swallows anything thrown from here, so a miss is logged and dropped
+        // rather than raised: judging a message we cannot quote is worse than not judging it.
+        Optional<StoredMessage> stored = messageStore.find(chatId, msg.getMessageId());
+        if (stored.isEmpty()) {
+            log.warn("Message {} in chat {} was not persisted before judging — skipping",
+                    msg.getMessageId(), chatId);
+            return;
+        }
+        StoredMessage target = stored.get();
 
         List<StoredMessage> extendedHistory = maybeExtendedHistory(chatId, senderId, targetId);
 
