@@ -18,6 +18,9 @@ import java.util.Optional;
  * Batch profiling runs on the cheap model: it is a prior, not a verdict, and a wrong
  * tone summary must never be expensive. Summaries are written in English, like rule
  * definitions, because they are prompt scaffolding rather than content anyone reads.
+ * If a surface ever shows them to admins (/stats, SPEC 13), revisit that: SPEC 16 would
+ * then put them on the Italian side of the line, and it is the two system prompts below
+ * that decide the language.
  */
 @Component
 @Slf4j
