@@ -15,6 +15,20 @@ those, ask. When a decision does resolve one, or when the code has to depart fro
 spec, **edit `SPEC.md` in the same PR**: it is a living document, not a historical
 record, and the two must not drift.
 
+## Principles
+
+**Simplicity is the mantra.** Prefer it, and enforce it in review. When two designs both
+work, ship the smaller one. Don't add a layer, an abstraction, or a config knob before
+something actually needs it.
+
+**Clean code, clean architecture, pragmatic programming.** Concretely here: keep the
+seams that already exist (`LlmClient`, `LlmJudge`, `ProfileProvider`, `AdminCommand`),
+keep policy out of the pipeline and prompt assembly out of the router, and let names
+carry the meaning so prose doesn't have to.
+
+**Don't over-comment.** Comment *why*, never *what*. A comment restating the line above
+it is noise; one recording a decision, a constraint, or a trap earns its place.
+
 ## Commands
 
 ```bash
@@ -115,6 +129,10 @@ propose a sentence it isn't confident in.
 
 ## Working agreements
 
+- **Be extremely concise.** No preamble, no recap of what you just did, no listing
+  options you won't take. This matters most where a human has to act on the text:
+  questions to the user, PR bodies, and the bot's own admin-facing output — an admin
+  reading a verdict is deciding something, not browsing.
 - **Run `mvn test` before every commit.** Never commit on a red or unrun suite.
 - **Ask before adding a Maven dependency.** The footprint stays deliberate; no new
   libraries slipped in as a side effect of a feature.
