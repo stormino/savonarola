@@ -22,7 +22,7 @@ public class OpenRouterClient implements LlmClient {
         this.restClient = RestClient.builder()
                 .baseUrl(props.llm().baseUrl())
                 .defaultHeader("Authorization", "Bearer " + props.llm().apiKey())
-                .defaultHeader("X-Title", "savonarola")
+                .defaultHeader("X-Title", "Savonarola")
                 .build();
     }
 

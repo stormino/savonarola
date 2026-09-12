@@ -2,7 +2,8 @@ spring:
   application:
     name: savonarola
   datasource:
-    url: jdbc:h2:file:./data/savonarola;DB_CLOSE_DELAY=-1
+    # SAV_DATA_DIR is where the H2 file lives; in Docker it is the mounted volume.
+    url: jdbc:h2:file:${SAV_DATA_DIR:./data}/savonarola;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
     username: sa
     password: ""

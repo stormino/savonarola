@@ -39,6 +39,10 @@ mvn compile
 mvn spring-boot:run
 ```
 
+```bash
+docker compose up -d      # the deployed path; SAV_DATA_DIR points at the mounted volume
+```
+
 Running the app needs `SAV_BOT_TOKEN`, `SAV_MAIN_CHAT_ID`, `SAV_ADMIN_CHAT_ID`, and
 `OPENROUTER_API_KEY` in the environment. State is a local H2 file under `data/`; deleting
 it resets everything including seeded rules.
@@ -135,6 +139,12 @@ runtime. Read both through `SettingsService`.
   Throw `IllegalArgumentException` for bad input and the dispatcher replies with `usage()`.
 - **`RuleSeeder` never overwrites an existing rule**, so a restart cannot undo curation
   done through `/train`. Preserve that if you touch it.
+
+## Releasing
+
+The git tag is the version: `v1.4.0` publishes `1.4.0`. The pom stays on a `-SNAPSHOT`
+and CI stamps it from the tag, so never hand-edit `<version>` to cut a release. A tag
+containing a hyphen is a prerelease and does not move `latest`.
 
 ## Working agreements
 

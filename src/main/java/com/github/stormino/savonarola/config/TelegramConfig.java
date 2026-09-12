@@ -19,9 +19,23 @@ public class TelegramConfig {
 
     @Bean(destroyMethod = "close")
     public TelegramBotsLongPollingApplication botsApplication(
-            SavonarolaProperties props, SavonarolaBot bot) throws Exception {
+            SavonarolaProperties props, SavonarolaBot bot) {
         var app = new TelegramBotsLongPollingApplication();
-        app.registerBot(props.telegram().token(), bot);
+        try {
+            app.registerBot(props.telegram().token(), bot);
+        } catch (Exception e) {
+            // Telegram reports a bad token as an empty-message exception, which tells a
+            // first-time deployer nothing. This is the most likely first-run mistake.
+            throw new IllegalStateException(
+                    "Could not register the bot with Telegram. Check that SAV_BOT_TOKEN is the "
+                    + "token from @BotFather and that this host can reach api.telegram.org. "
+                    + "Telegram said: " + describe(e), e);
+        }
         return app;
+    }
+
+    private static String describe(Exception e) {
+        String message = e.getMessage();
+        return message == null || message.isBlank() ? e.toString() : message;
     }
 }

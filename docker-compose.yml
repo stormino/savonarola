@@ -1,0 +1,15 @@
+services:
+  savonarola:
+    build: .
+    image: ghcr.io/stormino/savonarola:latest
+    container_name: savonarola
+    env_file: .env
+    volumes:
+      # The moderation record and message store live here. Losing it resets the
+      # escalation ladder, the profiles and every trained example.
+      - savonarola-data:/data
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+volumes:
+  savonarola-data:
