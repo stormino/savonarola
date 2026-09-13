@@ -1,7 +1,71 @@
+# Build output
 target/
-data/
-*.log
+build/
+out/
+bin/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.hprof
+
+# Maven plugin leftovers. versions:set is what the release workflow runs, and it
+# writes pom.xml.versionsBackup unless -DgenerateBackupPoms=false is passed.
+pom.xml.versionsBackup
+pom.xml.releaseBackup
+pom.xml.tag
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+.flattened-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Secrets. .env.example is the template and is committed; nothing else here is.
 .env
+.env.*
+!.env.example
+
+# The bot's own database. It holds the group's message history, the moderation
+# record and every trained example, so it must never reach the repository —
+# matched wherever SAV_DATA_DIR happens to point, not just the default ./data.
+data/
+*.mv.db
+*.trace.db
+*.lock.db
+
+# Logs and JVM crash dumps
+*.log
+hs_err_pid*
+replay_pid*
+.attach_pid*
+
+# IntelliJ
 .idea/
+.idea_modules/
 *.iml
+*.iws
+*.ipr
+atlassian-ide-plugin.xml
+
+# Eclipse
+.classpath
+.project
+.settings/
+.apt_generated/
+
+# VS Code
+.vscode/
+
+# NetBeans
+nbproject/
+
+# Claude Code local settings — personal, unlike project skills and agents
+.claude/settings.local.json
+
+# OS
 .DS_Store
+._*
+Thumbs.db
