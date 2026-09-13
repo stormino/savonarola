@@ -1,0 +1,112 @@
+spring:
+  application:
+    name: savonarola
+  datasource:
+    # SAV_DATA_DIR is where the H2 file lives; in Docker it is the mounted volume.
+    url: jdbc:h2:file:${SAV_DATA_DIR:./data}/savonarola;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+savonarola:
+  # LOG_ONLY -> ON_DEMAND_ACTION -> LIVE_ACTION
+  operating-mode: LOG_ONLY
+
+  telegram:
+    token: ${SAV_BOT_TOKEN}
+    main-chat-id: ${SAV_MAIN_CHAT_ID}
+    admin-chat-id: ${SAV_ADMIN_CHAT_ID}
+
+  decision:
+    # Deliberately low while in LOG_ONLY: a false positive only costs a read message.
+    confidence-threshold: 0.6
+
+  pattern-detection:
+    negative-interaction-threshold: 3
+    window-days: 30
+
+  escalation:
+    ladder-minutes: [5, 30, 120, 1440]   # beyond the last rung -> ADMIN_REVIEW
+    decay-after-days: 30
+
+  rule-set:
+    # Every example of every active rule is sent on every judgment, so without a cap
+    # training would make each judgment steadily more expensive — and the Groq free tier
+    # is bounded by tokens per day, not requests. 6 per rule keeps the prompt near 2.7K
+    # tokens whatever the rulebook grows to. The full set stays in the database.
+    max-examples-per-rule: 6
+
+  message-store:
+    retention-days: 90
+    context-window-size: 15
+
+  profile:
+    enabled: true
+    cron: "0 0 4 * * *"
+    active-window-days: 30
+    min-messages-for-tone: 20
+    min-interactions-for-pair: 8
+    # One LLM call per user and per pair, against the same free-tier budget as live
+    # judging (~200/day per model), so the run is capped and works busiest-first.
+    max-users-per-run: 25
+    max-pairs-per-run: 15
+    max-messages-per-summary: 60
+
+  llm:
+    # Which provider is live. Both are OpenAI-shaped; only the active one is contacted.
+    provider: ${SAV_LLM_PROVIDER:groq}
+    providers:
+      groq:
+        base-url: https://api.groq.com/openai/v1
+        api-key: ${GROQ_API_KEY:}
+        # All three verified against the live API: they accept response_format=json_object
+        # and answer the real rulebook prompt correctly. qwen3.6-27b and gpt-oss-safeguard-20b
+        # do NOT accept json_object and must not be used here.
+        #
+        # Free tier ceiling per model: 30 RPM, 1K RPD, 8K TPM, 200K TPD. TPD binds — a real
+        # judgment prompt measured ~1.1K tokens with a short context window, so roughly 120
+        # a day per model. The profile model is deliberately outside the judgment chain so
+        # nightly profiling draws on its own 200K instead of eating the judgment budget.
+        judgment-models:
+          - ${SAV_PRIMARY_MODEL:openai/gpt-oss-120b}
+          - ${SAV_FALLBACK_MODEL:qwen/qwen3.8-27b}
+        profile-model: ${SAV_PROFILE_MODEL:openai/gpt-oss-20b}
+      openrouter:
+        base-url: https://openrouter.ai/api/v1
+        api-key: ${OPENROUTER_API_KEY:}
+        headers:
+          X-Title: Savonarola
+        judgment-models:
+          - ${SAV_PRIMARY_MODEL:thinkingmachines/inkling}
+          - ${SAV_FALLBACK_MODEL:nvidia/nemotron-3-super}
+        profile-model: ${SAV_PROFILE_MODEL:thinkingmachines/inkling-small}
+
+  health:
+    consecutive-failure-threshold: 3
+    tag: "⚠️ SYSTEM"
+
+  action-announcement:
+    enabled: true
+    template: "Utente {user} mutato per {duration}."
+    reply-to-offending-message: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Only health. The container reads it; nothing else should be reachable.
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  server:
+    # Off the default port so the health endpoint is never confused with anything public.
+    port: 8081
+
+logging:
+  level:
+    com.github.stormino.savonarola: INFO

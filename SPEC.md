@@ -21,9 +21,11 @@ Il regolamento esiste oggi come testo in linguaggio naturale (in italiano). Dive
 
 ### 2.1 Aggiornamento del regolamento
 
-- Comando admin diretto nel bot (testo o file allegato) — nessuna dipendenza da repository esterni per l'MVP.
+- Comando admin diretto nel bot: `/rulebook update`, in risposta al messaggio che contiene il regolamento o al file allegato, oppure con un link a un messaggio o il testo inline — nessuna dipendenza da repository esterni per l'MVP. La forma per citazione e quella per link sono quelle che contano davvero: un regolamento raramente entra nei 4096 caratteri di un singolo messaggio Telegram.
+- Il nome del comando è in inglese come tutti gli altri (sezione 16); la bozza iniziale usava `/regolamento aggiorna`, incoerente con quel vincolo.
 - La conversione testo → RuleSet è **LLM-assisted**: un modello scompone il testo in regole discrete (id, descrizione, severità, esempi).
 - **Nessuna attivazione automatica**: il bot posta il RuleSet proposto sul canale admin; un admin deve confermare prima che diventi il RuleSet attivo. Un errore di parsing qui si propagherebbe a tutte le decisioni successive, quindi la review umana è obbligatoria.
+- All'approvazione, le regole che il nuovo regolamento non contiene vengono **disattivate, mai cancellate**, e nessun esempio viene rimosso: il training (sezione 8) è lavoro degli admin e una riscrittura del regolamento non deve distruggerlo. Un RuleSet compilato vuoto viene rifiutato, altrimenti un errore di parsing disattiverebbe tutto in silenzio.
 
 ### 2.2 RuleSet — struttura dati
 
@@ -65,7 +67,7 @@ operatingMode: LOG_ONLY | ON_DEMAND_ACTION | LIVE_ACTION
 
 | Modalità | Comportamento |
 |---|---|
-| `LOG_ONLY` | Dry run. Ogni decisione (violata o no) loggata su Admin schiaffers. Nessuna azione possibile, nemmeno manuale. Serve a validare l'accuratezza prima di dare potere reale al bot. |
+| `LOG_ONLY` | Dry run. Ogni decisione (violata o no) loggata su Admin schiaffers. Nessuna azione possibile, nemmeno manuale: `/execute` viene rifiutato. Le violazioni vengono comunque persistite con status `logged` — senza una traccia, la modalità che esiste per misurare l'accuratezza non lascerebbe nulla da misurare. Serve a validare l'accuratezza prima di dare potere reale al bot. |
 | `ON_DEMAND_ACTION` | Sopra soglia di confidenza, il bot prepara la decisione (regola, motivazione, azione suggerita) e la posta su Admin schiaffers con un comando pronto (`/execute`). Un admin conferma, modifica o scarta. |
 | `LIVE_ACTION` | Stesso giudizio, ma l'azione parte autonomamente sopra soglia, senza attesa. |
 
@@ -76,6 +78,8 @@ Sotto soglia di confidenza, in tutte le modalità (tranne `LOG_ONLY`, dove tutto
 ## 4. Pipeline di giudizio
 
 ### 4.1 Flusso per messaggio
+
+**I messaggi modificati non vengono giudicati** (deciso). Il bot giudica alla ricezione: modificare un insulto dopo non annulla il giudizio già dato. Resta scoperto il caso inverso — messaggio innocuo poi modificato in insulto — accettato consapevolmente: la chat è matura e il costo di una chiamata LLM per ogni correzione di refuso non lo giustifica.
 
 ```
 Messaggio in arrivo
@@ -142,11 +146,13 @@ decision:
   reasoning: "<string>"
   suggestedAction: { type: mute, durationMinutes: <int>, rung: <int> }
   actualAction: { type: mute, durationMinutes: <int> }   # presente solo se diverso dal suggerito
-  status: pending | executed | dismissed
+  status: logged | pending | executed | dismissed
   resolvedBy: <admin_telegram_id>   # presente solo per pending → executed/dismissed
 ```
 
 `suggestedAction` è calcolata in base alla posizione dell'utente sulla escalation ladder (sezione 7) al momento del giudizio.
+
+`logged` è lo status delle decisioni registrate in `LOG_ONLY`: non sono mai azionabili e non contano mai ai fini della posizione sulla ladder (sezione 9), che è derivata dalle sole decisioni `executed`.
 
 ---
 
@@ -173,7 +179,7 @@ Necessario perché l'API bot di Telegram non offre un modo di recuperare un mess
 
 ### 7.1 Generazione — ibrida
 
-- **Batch periodico** (es. notturno): per ogni utente attivo, sintesi leggera del tono tipico; per ogni coppia che interagisce spesso, contatore di interazioni negative negli ultimi 30 giorni + eventuale nota sintetica.
+- **Batch periodico** (es. notturno): per ogni utente attivo, sintesi leggera del tono tipico; per ogni coppia che interagisce spesso, contatore di interazioni negative negli ultimi 30 giorni + eventuale nota sintetica. Ogni utente e ogni coppia costano una chiamata LLM sullo stesso budget del giudizio live (sezione 14), quindi il run è limitato per numero di utenti e di coppie e procede dai più attivi: profili parziali sono accettabili, un giudice a secco no.
 - **Context live**: la finestra degli ultimi 15 messaggi, sempre inclusa nella chiamata di giudizio, cattura variazioni recenti non ancora riflesse nel profilo batch.
 
 ### 7.2 Struttura
@@ -189,15 +195,19 @@ userProfile:
   lastUpdated: <timestamp>
 
 pairSignal:
-  userA: <string>
-  userB: <string>
+  senderId: <string>
+  targetId: <string>
   negativeInteractionCount: <int>   # finestra: ultimi 30 giorni
   note: "<opzionale>"
 ```
 
+Il `pairSignal` è **direzionale**: il trigger della sezione 7.4 è `negativeInteractionCount(sender, target)`, e chi prende di mira chi è tutto il segnale. Un signal che il batch non ha aggiornato entro la finestra di rilevazione viene ignorato, così una coppia non resta segnalata dopo aver smesso di interagire.
+
 ### 7.3 Annotazione admin
 
-Gli admin possono correggere o seedare manualmente `knownDynamics` (es. "X e Y hanno una rivalità scherzosa di lunga data") — utile soprattutto in fase di avvio, prima che il bot abbia abbastanza storico per inferirlo da solo.
+Gli admin possono correggere o seedare manualmente `knownDynamics` con `/dynamic` (es. "X e Y hanno una rivalità scherzosa di lunga data") — utile soprattutto in fase di avvio, prima che il bot abbia abbastanza storico per inferirlo da solo.
+
+Un'annotazione admin non viene mai sovrascritta dalle inferenze del batch: la sezione esiste proprio perché all'inizio il bot sbaglia queste letture.
 
 ### 7.4 Query estesa — trigger
 
@@ -221,6 +231,8 @@ negativeInteractionCount(sender, target) sopra soglia (media/bassa, per iniziare
 - Se non trovato (fuori retention): il bot segnala che non può recuperarlo.
 - **Nessuna azione retroattiva**: marcare un messaggio come esempio positivo non genera mai un'azione di moderazione su quel messaggio. Il training arricchisce il RuleSet per il futuro, punto.
 - Per l'MVP gli esempi vivono direttamente dentro il RuleSet (non in un dataset separato) — migrabile in futuro se il volume cresce molto.
+- **Al giudizio ne viene inviato un numero massimo per regola** (`maxExamplesPerRule`). Tutti gli esempi restano nel database: il cap riguarda solo il prompt. Senza, ogni `/train` renderebbe più caro ogni giudizio successivo, e il tetto del free tier è sui token al giorno, non sulle richieste — il comando che serve a rendere il bot più accurato ne ridurrebbe la capacità.
+- La selezione **tiene rappresentate entrambe le etichette**, non semplicemente le più recenti. Sono gli esempi `negative` a impedire che il giudice segnali la critica dura che il regolamento protegge: un cap basato solo sulla recenza lo sbilancerebbe verso la segnalazione non appena gli admin addestrassero una serie di violazioni.
 
 ---
 
@@ -233,6 +245,7 @@ escalation:
   decayAfterDays: 30   # una striscia pulita di N giorni resetta la posizione sulla ladder
 ```
 
+- **Scope: globale per utente** (deciso). Qualunque decisione eseguita fa salire di un gradino, indipendentemente dalla regola violata. Chi continua a superare il limite scala, quale che sia il limite — è il modo in cui un admin umano legge un pattern. La posizione è derivata dalle sole decisioni `executed` dentro la finestra di decay, quindi non c'è un contatore separato da mantenere.
 - `admin_review` è il tetto della ladder: non è un'azione automatica, è il punto in cui il bot smette di agire da solo e passa la decisione a un admin.
 - **Il ban non è mai un'azione automatica del bot** in nessuna modalità — resta sempre una decisione umana, coerente col regolamento ("il ban è l'ultima risorsa").
 
@@ -240,13 +253,17 @@ escalation:
 
 ## 10. Comando `/execute`
 
-Disponibile solo in `ON_DEMAND_ACTION`, sulla chat Admin schiaffers.
+Disponibile sulla chat Admin schiaffers in `ON_DEMAND_ACTION` e in `LIVE_ACTION`. **Rifiutato in `LOG_ONLY`**, dove nessuna azione è possibile nemmeno manualmente (sezione 3).
+
+Serve anche in `LIVE_ACTION` perché le decisioni che raggiungono il tetto della ladder (`admin_review`, sezione 9) restano `pending` anche in quella modalità: senza `/execute` sarebbero irraggiungibili per sempre.
 
 ```
-/execute <decisionId>                     → esegue l'azione suggerita così com'è
-/execute <decisionId> duration=<Nm|Nh>    → esegue con durata modificata
-/execute <decisionId> dismiss             → scarta, nessuna azione
+/execute <decisionId>                        → esegue l'azione suggerita così com'è
+/execute <decisionId> duration=<Nm|Nh|Nd>    → esegue con durata modificata
+/execute <decisionId> dismiss                → scarta, nessuna azione
 ```
+
+Al tetto della ladder il bot non propone una durata, per definizione: lì `duration=` è obbligatorio e il comando senza durata viene rifiutato. La durata massima accettata è 30 giorni, coerente con "il ban non è mai un'azione automatica del bot" (sezione 9).
 
 La durata modificata viene registrata come `actualAction` nel decision object (sezione 5) — segnale utile in futuro per capire quanto spesso gli admin correggono le proposte del bot, e quindi quanto la ladder configurata è tarata bene.
 
@@ -264,7 +281,7 @@ actionAnnouncement:
   replyToOffendingMessage: true
 ```
 
-`{user}`: da decidere se menzione diretta (@username) o solo nome senza tag — non ancora deciso, default proposto: nome senza tag (meno invasivo), reversibile in config.
+`{user}`: **menzione diretta** (deciso). Chi ha uno username viene menzionato come `@username`; chi non ce l'ha tramite link `tg://user?id=`, che richiede parse mode HTML — il nome visualizzato viene quindi escapato, perché è testo scelto dall'utente.
 
 ---
 
@@ -274,13 +291,20 @@ Tutti disponibili solo sulla chat Admin schiaffers, permessi verificati dinamica
 
 | Comando | Scopo |
 |---|---|
-| `/regolamento aggiorna` (testo/file) | Trigger compilazione LLM-assisted del RuleSet, con review/approve |
+| `/rulebook update [link\|testo]` (o in risposta al messaggio/file col regolamento) | Trigger compilazione LLM-assisted del RuleSet |
+| `/rulebook approve\|reject <proposalId>` | Attiva o scarta un RuleSet compilato |
+| `/rulebook pending` | Elenca le proposte in attesa |
 | `/train <rule_id> <positive\|negative> <link>` | Aggiunge un esempio a una regola |
+| `/dynamic <@a\|id> <@b\|id> <descrizione>` | Seeda o corregge una dinamica nota tra due utenti (sezione 7.3) |
 | `/execute <decisionId> [duration=...\|dismiss]` | Esegue/modifica/scarta una decisione in `ON_DEMAND_ACTION` |
 | `/stats [today\|week\|month\|all]` | Statistiche on-demand (sezione 13) |
-| *(da definire)* | Toggle enabled/disabled per singola regola, cambio `operatingMode`, cambio soglia di confidenza |
+| `/rule list\|enable\|disable <rule_id>` | Elenca le regole e le attiva/disattiva. Disattivare non cancella: gli esempi restano |
+| `/mode [LOG_ONLY\|ON_DEMAND_ACTION\|LIVE_ACTION]` | Mostra o cambia la modalità operativa |
+| `/threshold [0.0-1.0]` | Mostra o cambia la soglia di confidenza |
 
 Nessuna approvazione a maggioranza richiesta per l'MVP: un singolo admin che conferma è sufficiente per qualunque azione, incluse le approvazioni del RuleSet.
+
+`operatingMode` e la soglia di confidenza sono modificabili a runtime e **persistono ai riavvii**: i valori in `application.yml` restano il punto di partenza dichiarato, non l'ultima parola. Ogni cambio dei due, e ogni toggle di regola, viene annunciato sulla chat admin con chi l'ha fatto: sono le manopole che decidono quanto potere ha il bot, e nessun admin deve scoprirlo per caso.
 
 ---
 
@@ -305,6 +329,8 @@ statsCommand:
     health:
       - errori consecutivi, fallback attivati, downtime
 ```
+
+Volume e azioni sono ricavati dalle decisioni e dai messaggi persistiti, quindi rispettano il periodo richiesto. **Consumo LLM e percentuale di query estesa sono invece contatori in memoria, riportati "dall'avvio"**: il denominatore della query estesa è ogni messaggio giudicato, e una riga per messaggio giudicato costerebbe più di quanto valga il dato. Il report lo dichiara esplicitamente.
 
 ---
 
@@ -344,9 +370,7 @@ Segnali monitorati: connettività/latenza OpenRouter, errori consecutivi sulla c
 
 - Schema dati completo e relazioni tra message store, profili, decision log (solo abbozzato qui, sezioni 5-7).
 - Logica esatta della compilazione LLM-assisted del regolamento: comportamento in caso di output ambiguo o parsing incerto.
-- Scope della escalation ladder: globale per utente vs per regola (esplicitamente rimandato).
-- `{user}` in `actionAnnouncement`: menzione o solo nome.
-- Soglia esatta di `negativeInteractionCount` per il trigger della query estesa.
-- Soglia esatta di `confidenceThreshold`.
+- Soglia esatta di `negativeInteractionCount` per il trigger della query estesa (default corrente: 3, da tarare sui dati del primo run in `LOG_ONLY`).
+- Soglia esatta di `confidenceThreshold` (default corrente: 0.6, modificabile a runtime con `/threshold`).
 - Comandi per toggle regole/modalità/soglie (elencati come necessari, non ancora specificati nel dettaglio).
 - Scaffolding tecnico (Spring Boot, dipendenze, struttura progetto) — volutamente rimandato a valle di questo documento.
