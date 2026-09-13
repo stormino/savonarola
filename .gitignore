@@ -1,7 +1,51 @@
+# Build output
 target/
-data/
-*.log
+build/
+out/
+bin/
+*.class
+
+# Secrets. .env.example is the template and is committed; nothing else here is.
 .env
+.env.*
+!.env.example
+
+# The bot's own database. It holds the group's message history, the moderation
+# record and every trained example, so it must never reach the repository —
+# matched wherever SAV_DATA_DIR happens to point, not just the default ./data.
+data/
+*.mv.db
+*.trace.db
+*.lock.db
+
+# Logs and JVM crash dumps
+*.log
+hs_err_pid*
+replay_pid*
+.attach_pid*
+
+# IntelliJ
 .idea/
 *.iml
+*.iws
+*.ipr
+
+# Eclipse
+.classpath
+.project
+.settings/
+.apt_generated/
+
+# VS Code
+.vscode/
+
+# NetBeans
+nbproject/
+
+# Claude Code local settings — personal, unlike project skills and agents
+.claude/settings.local.json
+
+# OS
 .DS_Store
+._*
+Thumbs.db
