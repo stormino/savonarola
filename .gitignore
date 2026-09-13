@@ -4,6 +4,24 @@ build/
 out/
 bin/
 *.class
+*.jar
+*.war
+*.ear
+*.nar
+*.hprof
+
+# Maven plugin leftovers. versions:set is what the release workflow runs, and it
+# writes pom.xml.versionsBackup unless -DgenerateBackupPoms=false is passed.
+pom.xml.versionsBackup
+pom.xml.releaseBackup
+pom.xml.tag
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+.flattened-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
 
 # Secrets. .env.example is the template and is committed; nothing else here is.
 .env
@@ -26,9 +44,11 @@ replay_pid*
 
 # IntelliJ
 .idea/
+.idea_modules/
 *.iml
 *.iws
 *.ipr
+atlassian-ide-plugin.xml
 
 # Eclipse
 .classpath
