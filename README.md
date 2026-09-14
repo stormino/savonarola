@@ -218,6 +218,10 @@ tests are plain JUnit 5 and Mockito.
 
 ## Not implemented yet
 
-Nothing from SPEC is outstanding. Two things are deliberately out of scope: edited
-messages are never re-judged, and photo captions are not processed. Section 17 still lists
-open thresholds, which are tuning decisions for after the first `LOG_ONLY` run.
+SPEC sections 18, 19 and 20 are designed but not built: the intervention ladder
+(observe → calm → warn → mute), the Savonarolan voice the bot uses when it speaks in the
+main group, and the roster and group dossier that tell it who is actually in the room.
+
+Everything else from SPEC is implemented. Two things are deliberately out of scope: edited
+messages are never re-judged, and photo captions are not processed. Section 21 lists the remaining open thresholds, which are
+tuning decisions rather than missing code.
