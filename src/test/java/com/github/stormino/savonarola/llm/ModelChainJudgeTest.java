@@ -3,6 +3,8 @@ package com.github.stormino.savonarola.llm;
 import com.github.stormino.savonarola.TestProperties;
 import com.github.stormino.savonarola.health.HealthMonitor;
 import com.github.stormino.savonarola.moderation.OperatingMode;
+import com.github.stormino.savonarola.moderation.Severity;
+import com.github.stormino.savonarola.rules.Rule;
 import com.github.stormino.savonarola.store.StoredMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +43,10 @@ class ModelChainJudgeTest {
 
     /** A window of three: ids 10, 11 and 12 are judgeable, nothing else is. */
     private static JudgmentInput window() {
-        return new JudgmentInput(List.of(), Map.of(),
+        return new JudgmentInput(List.of("@tizio"), null,
+                List.of(new Rule("direct_insult", Severity.HIGH, false, "d", true),
+                        new Rule("mockery_of_opinions", Severity.MEDIUM, false, "d", true)),
+                Map.of(),
                 List.of(message(10, "ciao"), message(11, "sei un buffone"), message(12, "ok")),
                 List.of(), Map.of(), List.of());
     }
@@ -99,6 +104,30 @@ class ModelChainJudgeTest {
 
         assertThat(judge.judge(window()))
                 .extracting(Violation::messageId).containsExactly(11L);
+    }
+
+    @Test
+    void discardsARuleTheModelInvented() {
+        // Both of these were invented in the first live session; neither is in the rulebook.
+        respondsWith("primary", """
+                {"violations": [
+                  {"messageId": 10, "ruleId": "no_politics", "confidence": 0.9, "reasoning": "x"},
+                  {"messageId": 11, "ruleId": "respect_reciprocal", "confidence": 0.9, "reasoning": "y"},
+                  {"messageId": 12, "ruleId": "direct_insult", "confidence": 0.8, "reasoning": "z"}]}
+                """);
+
+        assertThat(judge.judge(window()))
+                .extracting(Violation::ruleId).containsExactly("direct_insult");
+    }
+
+    @Test
+    void aWindowOfNothingButInventedRulesIsAWindowWithNoViolations() {
+        respondsWith("primary", """
+                {"violations": [
+                  {"messageId": 10, "ruleId": "no_politics", "confidence": 0.99, "reasoning": "x"}]}
+                """);
+
+        assertThat(judge.judge(window())).isEmpty();
     }
 
     @Test

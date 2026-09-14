@@ -73,5 +73,20 @@ public interface StoredMessageRepository extends JpaRepository<StoredMessage, Lo
 
     long countByChatIdAndSentAtAfter(long chatId, Instant since);
 
+    /**
+     * Who is actually in the room, busiest first. Anyone not on this list who gets named
+     * in the conversation is a third party — a player, a pundit — not a participant.
+     */
+    @Query("""
+            select m.senderName
+            from StoredMessage m
+            where m.chatId = :chatId and m.sentAt > :since and m.senderName is not null
+            group by m.senderName
+            order by count(m) desc
+            """)
+    List<String> findParticipantNames(@Param("chatId") long chatId,
+                                      @Param("since") Instant since,
+                                      Pageable pageable);
+
     void deleteBySentAtBefore(Instant cutoff);
 }

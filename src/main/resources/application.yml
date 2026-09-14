@@ -36,6 +36,13 @@ savonarola:
     ladder-minutes: [5, 30, 120, 1440]   # beyond the last rung -> ADMIN_REVIEW
     decay-after-days: 30
 
+  group:
+    # The roster is who has spoken recently. Anyone named but absent from it is a third
+    # party — a player, a journalist — and the rules protecting members do not apply to
+    # them. Without this the judge cannot tell a member from Dario Puppo.
+    roster-days: 14
+    roster-max-names: 40
+
   rule-set:
     # Every example of every active rule is sent on every judgment, so without a cap
     # training would make each judgment steadily more expensive — and the Groq free tier
@@ -78,9 +85,12 @@ savonarola:
         # judgment prompt measured ~1.1K tokens with a short context window, so roughly 120
         # a day per model. The profile model is deliberately outside the judgment chain so
         # nightly profiling draws on its own 200K instead of eating the judgment budget.
+        # qwen3.8 leads because gpt-oss-120b was the only model in the pre-deployment
+        # eval that flagged a borderline sarcastic dig, and the first live session was
+        # dominated by false positives. Swap them back if qwen proves too permissive.
         judgment-models:
-          - ${SAV_PRIMARY_MODEL:openai/gpt-oss-120b}
-          - ${SAV_FALLBACK_MODEL:qwen/qwen3.8-27b}
+          - ${SAV_PRIMARY_MODEL:qwen/qwen3.8-27b}
+          - ${SAV_FALLBACK_MODEL:openai/gpt-oss-120b}
         profile-model: ${SAV_PROFILE_MODEL:openai/gpt-oss-20b}
       openrouter:
         base-url: https://openrouter.ai/api/v1

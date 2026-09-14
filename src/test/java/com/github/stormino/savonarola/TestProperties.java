@@ -75,6 +75,7 @@ public final class TestProperties {
                 new SavonarolaProperties.MessageStore(90, 15),
                 new SavonarolaProperties.JudgmentWindow(60, 25),
                 ruleSet,
+                new SavonarolaProperties.Group(14, 40),
                 llm,
                 profile,
                 new SavonarolaProperties.Health(3, "SYSTEM"),

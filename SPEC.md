@@ -148,7 +148,9 @@ uncertain, prefer lower confidence over a forced binary call.
 
 - **Una chiamata per finestra, non una per messaggio né una per regola**: molto più economico, e il modello vede l'intero scambio invece di una frase isolata.
 - **`reasoning` sempre presente su ogni violazione** — finisce nel log e nel messaggio `/execute`, deve essere comprensibile a un admin che decide. Per i messaggi che non violano nulla non c'è invece alcun `reasoning`: il modello restituisce solo le violazioni, e il silenzio su un messaggio è il verdetto che andava bene.
-- **Gli id citati vengono validati** contro la finestra. Un id inventato, o riferito a un messaggio fornito solo come contesto, viene scartato: un'allucinazione non deve mai diventare un mute.
+- **Il regolamento è esaustivo.** Il modello deve sapere esplicitamente che le regole fornite sono le uniche esistenti, e che non deve applicare la propria policy di moderazione appresa in addestramento. Nella prima sessione live ha inventato `no_politics` e `respect_reciprocal` — quest'ultima mai esistita, la prima esclusa apposta (sezione 2.3) — e su quelle ha proposto sanzioni. **Gli id delle regole vengono quindi validati** contro il RuleSet attivo: una regola che non abbiamo scritto non può sanzionare nessuno.
+- **Il modello va avvertito che il gruppo scherza.** Tre dei quattro falsi positivi della prima sessione erano battute, due con emoji di risata nel testo. Marcatori di ironia ed esagerazione assurda vanno letti come tali.
+- **Gli id dei messaggi vengono validati** contro la finestra. Un id inventato, o riferito a un messaggio fornito solo come contesto, viene scartato: un'allucinazione non deve mai diventare un mute.
 
 ---
 
@@ -287,7 +289,11 @@ La durata modificata viene registrata come `actualAction` nel decision object (s
 
 ## 11. Azione in chat principale (discrezione)
 
-Nella chat principale il bot **non lascia mai traccia del processo deliberativo** — nessun comando, nessun log, nessuna segnalazione. L'unico output visibile è l'annuncio di un'azione effettivamente eseguita (in `ON_DEMAND_ACTION` dopo conferma, o in `LIVE_ACTION` in autonomia).
+Nella chat principale il bot **non lascia mai traccia del processo deliberativo** — nessun comando, nessun log, nessuna segnalazione, nessun verdetto.
+
+**Eccezione deciso a valle della prima sessione live**: il bot interviene in chat principale anche per *calmare* e per *ammonire* (sezione 18), non solo per annunciare una pena. È una deroga consapevole al principio originario: un moderatore umano non tace fino al momento di punire, e la de-escalation funziona solo se è pubblica. Resta invece fermo che il processo deliberativo — regole valutate, confidence, motivazioni — non compare mai lì.
+
+In `LOG_ONLY` il bot non parla in chat principale nemmeno per calmare: scrive sulla chat owner ciò che *avrebbe* detto.
 
 ```yaml
 actionAnnouncement:
@@ -382,7 +388,66 @@ Segnali monitorati: connettività/latenza OpenRouter, errori consecutivi sulla c
 
 ---
 
-## 17. Aperto / da definire
+## 18. Scala di intervento — dall'osservazione alla pena
+
+La escalation ladder della sezione 9 parte dalla punizione. Un moderatore umano no: nota una lite, prova a raffreddarla, ammonisce chi la sta trascinando e solo dopo agisce.
+
+```yaml
+interventionLadder: [OBSERVE, CALM, WARN, MUTE]
+```
+
+| Gradino | Comportamento |
+|---|---|
+| `OBSERVE` | Nessuna azione. Il bot tiene stato e continua a guardare. È il caso normale. |
+| `CALM` | Messaggio di de-escalation in chat principale, **anonimo**: non nomina nessuno. Non è una sanzione e non viene registrato come tale. |
+| `WARN` | Ammonimento rivolto al responsabile. Pubblico, perché serve che il gruppo veda che il confine esiste. |
+| `MUTE` | La ladder della sezione 9, invariata. |
+
+Vincoli decisi:
+
+- **L'unità di moderazione è l'episodio, non il messaggio.** Un episodio è uno scambio in escalation fra due o più persone, con un'intensità che sale e scende. Ciò che il bot deve riconoscere è la lite, non la singola frase.
+- **Il bot non punisce al primo flag.** Si sale di gradino solo se l'intervento precedente non ha funzionato, dopo un tempo di grazia.
+- **`CALM` e `WARN` non contano ai fini della ladder dei mute** (sezione 9): solo i mute eseguiti fanno salire un utente. Altrimenti una settimana di battibecchi caricherebbe silenziosamente il colpo per una sciocchezza successiva.
+- **Gli episodi non si riaprono.** Se due persone si raffreddano e ricominciano più tardi, è un episodio nuovo, che riparte da `OBSERVE`.
+
+---
+
+## 19. La voce del bot
+
+Quando parla in chat principale — e **solo** lì — il bot parla come il Savonarola storico: volgare toscano, in particolare fiorentino, con il tono ammonitorio del predicatore e qualche inserto latino, coerente con la sua estrazione letteraria e religiosa.
+
+Non è un vezzo. Un richiamo in un registro palesemente antico e teatrale **disinnesca invece di inasprire**: un "basta così" detto da un bot suona come autorità che si impone e alza la tensione; "Fratelli, la contesa vi acceca" fa sorridere e raffredda. È esattamente ciò che serve a un intervento di `CALM`.
+
+Esempi di registro:
+
+```
+CALM   Fratelli, la contesa vi acceca. Tornate al giuoco, ché di quello si ragiona.
+WARN   {user}, io t'ammonisco: cessa da cotesta asprezza, o fia giocoforza tacerti.
+MUTE   {user} è ridotto al silenzio per {duration}. Verbum sapienti sat est.
+```
+
+Vale solo per la chat principale. Sul canale admin e sulla chat owner il bot resta piano e tecnico: lì conta capire in fretta cosa è successo, non ammirare lo stile.
+
+**Per l'MVP i testi sono template, non generati dall'LLM.** Tutto ciò che il bot dice in chat principale è pubblico e di fatto irreversibile, e un modello che scrive liberamente in un gruppo reale è esposto anche a prompt injection da parte dei membri. I template ruotano su un piccolo repertorio per non suonare meccanici.
+
+---
+
+## 20. Conoscenza del gruppo — roster e dossier
+
+La prima sessione live ha prodotto un falso positivo istruttivo: il bot ha segnalato come insulto un messaggio su "Puppo", cioè Dario Puppo, giornalista di cui il gruppo scherza abitualmente. La regola era già scritta correttamente — `direct_insult` richiede che il bersaglio sia un partecipante, non un personaggio pubblico di cui si discute — ma **il bot non aveva modo di sapere chi è nella stanza**.
+
+In un gruppo di tennis, dove metà della conversazione riguarda giocatori, allenatori e giornalisti, questo non è un caso limite: è il caso dominante.
+
+Due livelli, entrambi economici:
+
+- **Roster**: l'elenco di chi ha effettivamente scritto di recente, con i nomi visualizzati, incluso in ogni prompt di giudizio. Accompagnato da un'istruzione esplicita: *questi sono i partecipanti; chiunque altro venga nominato — giocatori, allenatori, giornalisti, commentatori — è un terzo, e le regole che proteggono i partecipanti non si applicano a lui.* Il dato è già nel message store.
+- **Dossier di gruppo**: qualche centinaio di token di conoscenza accumulata sulla cultura del gruppo — battute ricorrenti, tormentoni, chi è Puppo, quali nomi sono bersagli abituali di scherzi. Costruito dal job notturno sullo storico recente **e** correggibile dagli admin, con la stessa logica di review del regolamento (sezione 2.1): il bot propone, un admin conferma.
+
+È la "storia dell'intera chat" che mancava, ed è la singola leva più efficace contro i falsi positivi.
+
+---
+
+## 21. Aperto / da definire
 
 - Schema dati completo e relazioni tra message store, profili, decision log (solo abbozzato qui, sezioni 5-7).
 - Logica esatta della compilazione LLM-assisted del regolamento: comportamento in caso di output ambiguo o parsing incerto.

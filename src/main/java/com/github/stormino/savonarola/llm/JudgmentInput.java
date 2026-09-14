@@ -9,6 +9,8 @@ import java.util.Map;
 
 /** Everything the judge sees for one window of messages. */
 public record JudgmentInput(
+        List<String> participants,
+        String groupDossier,
         List<Rule> activeRules,
         Map<String, List<RuleExample>> examplesByRule,
         List<StoredMessage> candidates,

@@ -16,6 +16,7 @@ public record SavonarolaProperties(
         MessageStore messageStore,
         JudgmentWindow judgmentWindow,
         RuleSet ruleSet,
+        Group group,
         Llm llm,
         Profile profile,
         Health health,
@@ -45,6 +46,9 @@ public record SavonarolaProperties(
      * build an enormous prompt, size alone leaves a quiet chat unjudged.
      */
     public record JudgmentWindow(int seconds, int maxMessages) {}
+
+    /** How much of the group's own context travels with every judgment. */
+    public record Group(int rosterDays, int rosterMaxNames) {}
 
     /** Caps what reaches the prompt, not what is stored: every example is sent every time. */
     public record RuleSet(int maxExamplesPerRule) {}
