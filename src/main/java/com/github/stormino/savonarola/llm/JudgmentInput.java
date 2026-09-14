@@ -7,13 +7,12 @@ import com.github.stormino.savonarola.store.StoredMessage;
 import java.util.List;
 import java.util.Map;
 
-/** Everything the judge sees for a single verdict. */
+/** Everything the judge sees for one window of messages. */
 public record JudgmentInput(
         List<Rule> activeRules,
         Map<String, List<RuleExample>> examplesByRule,
-        StoredMessage targetMessage,
+        List<StoredMessage> candidates,
         List<StoredMessage> contextWindow,
-        String senderProfile,
-        String targetProfile,
+        Map<Long, String> profilesBySender,
         List<StoredMessage> extendedHistory
 ) {}

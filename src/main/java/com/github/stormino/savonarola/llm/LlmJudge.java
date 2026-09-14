@@ -1,7 +1,8 @@
 package com.github.stormino.savonarola.llm;
 
-import com.github.stormino.savonarola.moderation.Judgment;
+import java.util.List;
 
 public interface LlmJudge {
-    Judgment judge(JudgmentInput input);
+    /** Empty when nothing in the window broke a rule, which is the ordinary case. */
+    List<Violation> judge(JudgmentInput input);
 }

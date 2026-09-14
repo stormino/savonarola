@@ -20,6 +20,9 @@ savonarola:
     token: ${SAV_BOT_TOKEN}
     main-chat-id: ${SAV_MAIN_CHAT_ID}
     admin-chat-id: ${SAV_ADMIN_CHAT_ID}
+    # Optional private chat receiving every judgment, including the ones that found
+    # nothing. The admin chat is reserved for sanctions. 0 disables it.
+    owner-chat-id: ${SAV_OWNER_CHAT_ID:0}
 
   decision:
     # Deliberately low while in LOG_ONLY: a false positive only costs a read message.
@@ -39,6 +42,10 @@ savonarola:
     # is bounded by tokens per day, not requests. 6 per rule keeps the prompt near 2.7K
     # tokens whatever the rulebook grows to. The full set stays in the database.
     max-examples-per-rule: 6
+
+  judgment-window:
+    seconds: 60
+    max-messages: 25
 
   message-store:
     retention-days: 90

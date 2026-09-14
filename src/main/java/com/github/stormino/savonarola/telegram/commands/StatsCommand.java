@@ -88,9 +88,11 @@ public class StatsCommand implements AdminCommand {
                 sb.append("  <code>").append(Html.escape(rule)).append("</code>: ")
                   .append(count).append('\n'));
 
-        sb.append("Query estesa: ")
+        sb.append("Finestre valutate: ").append(metrics.windows())
+          .append(" su ").append(metrics.judged()).append(" messaggi (dall'avvio)\n")
+          .append("Query estesa: ")
           .append(String.format("%.1f%%", metrics.extendedHistoryRate() * 100))
-          .append(" di ").append(metrics.judged()).append(" giudizi (dall'avvio)\n");
+          .append(" delle finestre\n");
     }
 
     private void actions(StringBuilder sb, List<Decision> inPeriod) {

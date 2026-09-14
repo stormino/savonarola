@@ -29,15 +29,16 @@ public class DecisionRouter {
                 decisions.save(Decision.logged(msg.getChatId(), msg.getMessageId(),
                         msg.getFrom().getId(), judgment, suggested));
             }
-            notifier.send(dryRunReport(msg, judgment, suggested));
+            notifier.sendToOwner(dryRunReport(msg, judgment, suggested));
             return;
         }
 
         if (!judgment.violated()) return;
 
         if (judgment.confidence() < settings.confidenceThreshold()) {
-            // Not confident enough to propose a penalty — a human decides from scratch.
-            notifier.send(lowConfidenceFlag(msg, judgment));
+            // Not confident enough to propose a penalty, so there is nothing for an admin
+            // to act on — it belongs in the verbose stream, not the sanctions channel.
+            notifier.sendToOwner(lowConfidenceFlag(msg, judgment));
             return;
         }
 

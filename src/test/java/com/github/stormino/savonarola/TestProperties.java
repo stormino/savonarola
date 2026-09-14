@@ -14,6 +14,7 @@ public final class TestProperties {
 
     public static final long MAIN_CHAT = -1001234567890L;
     public static final long ADMIN_CHAT = -1009876543210L;
+    public static final long OWNER_CHAT = 226449030L;
 
     private TestProperties() {}
 
@@ -22,20 +23,28 @@ public final class TestProperties {
     }
 
     public static SavonarolaProperties with(OperatingMode mode, double confidenceThreshold) {
-        return build(mode, confidenceThreshold, defaultRuleSet(), defaultProfile(), defaultLlm());
+        return build(mode, confidenceThreshold, defaultRuleSet(), defaultProfile(), defaultLlm(),
+                OWNER_CHAT);
+    }
+
+    /** No owner chat configured, so the verbose stream has nowhere to go. */
+    public static SavonarolaProperties withoutOwnerChat(OperatingMode mode) {
+        return build(mode, 0.6, defaultRuleSet(), defaultProfile(), defaultLlm(), 0L);
     }
 
     public static SavonarolaProperties withRuleSet(int maxExamplesPerRule) {
         return build(OperatingMode.LOG_ONLY, 0.6,
-                new SavonarolaProperties.RuleSet(maxExamplesPerRule), defaultProfile(), defaultLlm());
+                new SavonarolaProperties.RuleSet(maxExamplesPerRule), defaultProfile(), defaultLlm(), OWNER_CHAT);
     }
 
     public static SavonarolaProperties withProfile(SavonarolaProperties.Profile profile) {
-        return build(OperatingMode.LOG_ONLY, 0.6, defaultRuleSet(), profile, defaultLlm());
+        return build(OperatingMode.LOG_ONLY, 0.6, defaultRuleSet(), profile, defaultLlm(),
+                OWNER_CHAT);
     }
 
     public static SavonarolaProperties withLlm(SavonarolaProperties.Llm llm) {
-        return build(OperatingMode.LOG_ONLY, 0.6, defaultRuleSet(), defaultProfile(), llm);
+        return build(OperatingMode.LOG_ONLY, 0.6, defaultRuleSet(), defaultProfile(), llm,
+                OWNER_CHAT);
     }
 
     public static SavonarolaProperties.RuleSet defaultRuleSet() {
@@ -55,14 +64,16 @@ public final class TestProperties {
     private static SavonarolaProperties build(OperatingMode mode, double confidenceThreshold,
                                               SavonarolaProperties.RuleSet ruleSet,
                                               SavonarolaProperties.Profile profile,
-                                              SavonarolaProperties.Llm llm) {
+                                              SavonarolaProperties.Llm llm,
+                                              long ownerChat) {
         return new SavonarolaProperties(
                 mode,
-                new SavonarolaProperties.Telegram(MAIN_CHAT, ADMIN_CHAT, "token"),
+                new SavonarolaProperties.Telegram(MAIN_CHAT, ADMIN_CHAT, ownerChat, "token"),
                 new SavonarolaProperties.Decision(confidenceThreshold),
                 new SavonarolaProperties.PatternDetection(3, 30),
                 new SavonarolaProperties.Escalation(List.of(5, 30, 120, 1440), 30),
                 new SavonarolaProperties.MessageStore(90, 15),
+                new SavonarolaProperties.JudgmentWindow(60, 25),
                 ruleSet,
                 llm,
                 profile,

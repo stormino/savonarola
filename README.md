@@ -50,7 +50,8 @@ cp .env.example .env
 |---|---|---|
 | `SAV_BOT_TOKEN` | yes | Token from @BotFather |
 | `SAV_MAIN_CHAT_ID` | yes | The group being moderated |
-| `SAV_ADMIN_CHAT_ID` | yes | The private admin chat |
+| `SAV_ADMIN_CHAT_ID` | yes | The private admin chat. Receives sanctions only. |
+| `SAV_OWNER_CHAT_ID` | no | A private chat receiving every judgment, including the ones that found nothing. Off when unset. |
 | `GROQ_API_KEY` | yes | https://console.groq.com/keys (or `OPENROUTER_API_KEY` if you switch provider) |
 | `SAV_LLM_PROVIDER` | no | `groq` (default) or `openrouter` |
 | `SAV_PRIMARY_MODEL` | no | Judgment model. Free catalogues change without notice — check yours is still live. |
@@ -131,6 +132,35 @@ Telegram on every command, never read from config.
 
 Changes to the mode, the threshold and any rule are announced in the admin chat with who
 made them.
+
+## Where reports go
+
+| Chat | Receives |
+|---|---|
+| Main group | Nothing but the announcement of a mute actually applied |
+| Admin chat | Sanctions: proposals awaiting `/execute`, executions, hand-offs at the top of the ladder — plus system alerts and command replies |
+| Owner chat (optional) | Every judgment, including clean messages and sub-threshold flags |
+
+In `LOG_ONLY` there are no sanctions, so the admin chat stays quiet and everything goes
+to the owner chat. That is the point: calibrate against the full stream in private without
+filling the admin chat with verdicts nobody has to act on.
+
+## How judging works
+
+Messages are not judged one at a time. They accumulate in a window — flushed after
+`judgment-window.seconds` or `judgment-window.max-messages`, whichever comes first — and
+the whole window is judged in a single call.
+
+The rulebook costs the same tokens per call whatever the batch size, so this covers
+roughly 20× more messages on the same quota. It also suits the pattern rules, which were
+never judgeable from an isolated message.
+
+The model returns only violations, each naming a message id, and any id not in the window
+is discarded — a hallucinated id must never become a mute. If one person breaks a rule
+several times in the same window they are sanctioned once, on their strongest violation:
+three rungs up the ladder in sixty seconds is not proportionate.
+
+The cost is latency: nothing is acted on until the window closes.
 
 ## Profiling
 
