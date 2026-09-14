@@ -51,8 +51,15 @@ savonarola:
     max-examples-per-rule: 6
 
   judgment-window:
-    seconds: 60
+    # How often readiness is checked. Not how often a window is flushed.
+    tick-seconds: 15
+    # A window flushes when it is full, or when it holds min-messages and has waited a
+    # tick, or when its oldest message has waited this long — so nothing is left unjudged,
+    # but a lone message is given a chance to find company first. A fixed tick that
+    # emptied the buffer every time paid the full rulebook to judge one line.
+    max-wait-seconds: 180
     max-messages: 25
+    min-messages: 4
 
   message-store:
     retention-days: 90

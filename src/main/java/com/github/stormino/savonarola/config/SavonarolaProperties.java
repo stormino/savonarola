@@ -45,7 +45,8 @@ public record SavonarolaProperties(
      * than one. Flushed on whichever limit is reached first — time alone lets a burst
      * build an enormous prompt, size alone leaves a quiet chat unjudged.
      */
-    public record JudgmentWindow(int seconds, int maxMessages) {}
+    public record JudgmentWindow(int tickSeconds, int maxWaitSeconds, int maxMessages,
+                                int minMessages) {}
 
     /** How much of the group's own context travels with every judgment. */
     public record Group(int rosterDays, int rosterMaxNames) {}

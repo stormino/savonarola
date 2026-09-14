@@ -106,7 +106,11 @@ Finestra chiusa (per tempo O per numero di messaggi, il primo dei due)
   → routing in base a operatingMode e confidence (sezione 3)
 ```
 
-Entrambi i limiti della finestra sono configurabili (`judgmentWindow.seconds`, `judgmentWindow.maxMessages`). Solo il tempo lascerebbe che una raffica costruisca un prompt enorme; solo la dimensione lascerebbe una chat tranquilla non giudicata. Il costo è la latenza: una violazione non viene sanzionata prima della chiusura della finestra.
+La finestra **non si svuota a intervallo fisso**. Un tick periodico che la svuotava comunque produceva finestre da un solo messaggio: il regolamento costa gli stessi token sia che la finestra ne contenga uno sia venticinque, quindi una finestra da uno è il caso peggiore — prezzo pieno, nessun beneficio. La finestra si chiude quando è piena (`maxMessages`), quando ha raccolto abbastanza da valere una chiamata (`minMessages`), oppure quando il messaggio più vecchio ha aspettato troppo (`maxWaitSeconds`) — così una chat tranquilla viene comunque giudicata, ma un messaggio isolato ha prima la possibilità di trovare compagnia.
+
+Il costo è la latenza: una violazione non viene sanzionata prima della chiusura della finestra.
+
+**Le finestre pulite non vengono annunciate.** Un "nessuna violazione" per finestra non è informazione: dice solo che il bot è vivo, ogni minuto, per sempre. Le violazioni sono riportate subito; il resto confluisce in un digest orario sulla chat owner, e un'ora in cui non è successo nulla non produce alcun messaggio.
 
 ### 4.2 Chiamata di giudizio — input assemblati
 

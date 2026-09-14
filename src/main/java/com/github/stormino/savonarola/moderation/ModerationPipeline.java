@@ -9,7 +9,6 @@ import com.github.stormino.savonarola.llm.Violation;
 import com.github.stormino.savonarola.rules.RuleSetService;
 import com.github.stormino.savonarola.store.MessageStoreService;
 import com.github.stormino.savonarola.store.StoredMessage;
-import com.github.stormino.savonarola.telegram.AdminNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -39,7 +38,7 @@ public class ModerationPipeline {
     private final EscalationService escalation;
     private final DecisionRouter router;
     private final PipelineMetrics metrics;
-    private final AdminNotifier notifier;
+    private final JudgmentDigest digest;
 
     @Async
     public void judge(List<Message> window) {
@@ -88,13 +87,14 @@ public class ModerationPipeline {
             return;
         }
 
-        if (violations.isEmpty()) {
-            notifier.sendToOwner("🧪 <b>[DRY RUN]</b> " + candidates.size()
-                    + " messaggi valutati, nessuna violazione.");
-            return;
-        }
+        List<Violation> actionable = worstPerSender(violations, byMessageId);
+        digest.recordWindow(candidates.size(), actionable.size());
 
-        for (Violation violation : worstPerSender(violations, byMessageId)) {
+        // A "nothing happened" line per window is noise, not information: it says only
+        // that the bot is alive, once a minute, forever. Rolled into an hourly digest.
+        if (actionable.isEmpty()) return;
+
+        for (Violation violation : actionable) {
             Message msg = byMessageId.get(violation.messageId());
             Judgment judgment = new Judgment(true, violation.ruleId(),
                     violation.confidence(), violation.reasoning());
