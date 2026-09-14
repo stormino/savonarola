@@ -10,7 +10,6 @@ import com.github.stormino.savonarola.rules.Rule;
 import com.github.stormino.savonarola.rules.RuleSetService;
 import com.github.stormino.savonarola.store.MessageStoreService;
 import com.github.stormino.savonarola.store.StoredMessage;
-import com.github.stormino.savonarola.telegram.AdminNotifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -45,7 +44,7 @@ class ModerationPipelineTest {
     private LlmJudge judge;
     private EscalationService escalation;
     private DecisionRouter router;
-    private AdminNotifier notifier;
+    private JudgmentDigest digest;
     private ModerationPipeline pipeline;
 
     @BeforeEach
@@ -57,11 +56,11 @@ class ModerationPipelineTest {
         judge = mock(LlmJudge.class);
         escalation = mock(EscalationService.class);
         router = mock(DecisionRouter.class);
-        notifier = mock(AdminNotifier.class);
+        digest = mock(JudgmentDigest.class);
 
         pipeline = new ModerationPipeline(TestProperties.with(OperatingMode.LOG_ONLY),
                 ruleSet, groupKnowledge, messageStore, profiles, judge, escalation, router,
-                new PipelineMetrics(), notifier);
+                new PipelineMetrics(), digest);
 
         when(ruleSet.activeRules()).thenReturn(List.of(
                 new Rule("direct_insult", Severity.HIGH, false, "d", true)));
@@ -100,14 +99,13 @@ class ModerationPipelineTest {
     }
 
     @Test
-    void reportsACleanWindowToTheOwnerAndActsOnNothing() {
+    void aCleanWindowIsCountedNotAnnounced() {
         when(judge.judge(any())).thenReturn(List.of());
 
         pipeline.judge(List.of(message(10, ALICE), message(11, BRUNO)));
 
-        ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
-        verify(notifier).sendToOwner(text.capture());
-        assertThat(text.getValue()).contains("2 messaggi").contains("nessuna violazione");
+        // Counted for the hourly digest; nothing sent, because nothing happened.
+        verify(digest).recordWindow(2, 0);
         verify(router, never()).route(any(), any(), any());
     }
 
@@ -159,7 +157,6 @@ class ModerationPipelineTest {
         pipeline.judge(List.of(message(10, ALICE)));
 
         verify(router, never()).route(any(), any(), any());
-        verify(notifier, never()).sendToOwner(anyString());
     }
 
     @Test

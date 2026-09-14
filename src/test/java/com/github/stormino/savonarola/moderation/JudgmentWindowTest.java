@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,6 +18,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+/** Fixture window: tick 15s, max wait 180s, max 25 messages, min 4. */
 class JudgmentWindowTest {
 
     private ModerationPipeline pipeline;
@@ -24,12 +27,22 @@ class JudgmentWindowTest {
     @BeforeEach
     void setUp() {
         pipeline = mock(ModerationPipeline.class);
-        // Fixture caps the window at 25 messages.
         window = new JudgmentWindow(TestProperties.with(OperatingMode.LOG_ONLY), pipeline);
     }
 
     private void offer(int count) {
         for (int i = 0; i < count; i++) window.offer(mock(Message.class));
+    }
+
+    /** Pretends the buffered messages have been waiting, without sleeping for three minutes. */
+    private void pretendWaited(int seconds) {
+        try {
+            var field = JudgmentWindow.class.getDeclaredField("oldestQueuedAt");
+            field.setAccessible(true);
+            field.set(window, Instant.now().minus(seconds, ChronoUnit.SECONDS));
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -40,52 +53,67 @@ class JudgmentWindowTest {
     }
 
     @Test
-    void holdsMessagesBackUntilSomethingFlushesIt() {
-        offer(5);
+    void holdsALoneMessageBackToWaitForCompany() {
+        offer(1);
 
+        window.flushIfReady();
+
+        // Judging one message costs the whole rulebook for a single line.
         verifyNoInteractions(pipeline);
     }
 
     @Test
-    void theTimerJudgesWhateverHasAccumulated() {
-        offer(5);
+    void judgesOnceEnoughHaveGathered() {
+        offer(4);
 
-        window.flush();
+        window.flushIfReady();
 
-        assertThat(judgedBatch()).hasSize(5);
+        assertThat(judgedBatch()).hasSize(4);
     }
 
     @Test
-    void aBurstFlushesOnSizeWithoutWaitingForTheTimer() {
+    void neverLeavesAQuietChatUnjudgedForever() {
+        offer(1);
+        pretendWaited(180);
+
+        window.flushIfReady();
+
+        assertThat(judgedBatch()).hasSize(1);
+    }
+
+    @Test
+    void aBurstFlushesOnSizeWithoutWaiting() {
         offer(25);
 
         assertThat(judgedBatch()).hasSize(25);
     }
 
     @Test
-    void theSizeFlushLeavesTheBufferEmptyRatherThanRejudging() {
-        offer(25);
-        window.flush();
+    void theWaitIsMeasuredFromTheOldestMessageNotTheNewest() {
+        offer(1);
+        pretendWaited(180);
+        offer(1);
 
+        window.flushIfReady();
+
+        assertThat(judgedBatch()).hasSize(2);
+    }
+
+    @Test
+    void theClockRestartsAfterAFlush() {
+        offer(25);
+        offer(1);
+
+        window.flushIfReady();
+
+        // The second message is fresh, so it waits rather than riding the old deadline.
         verify(pipeline, times(1)).judge(any());
     }
 
     @Test
-    void carriesOnBufferingAfterAFlush() {
-        offer(25);
-        offer(3);
-        window.flush();
-
-        ArgumentCaptor<List<Message>> batches = ArgumentCaptor.forClass(List.class);
-        verify(pipeline, times(2)).judge(batches.capture());
-        assertThat(batches.getAllValues().get(0)).hasSize(25);
-        assertThat(batches.getAllValues().get(1)).hasSize(3);
-    }
-
-    @Test
     void aQuietChatCostsNothing() {
-        window.flush();
-        window.flush();
+        window.flushIfReady();
+        window.flushIfReady();
 
         verify(pipeline, never()).judge(any());
     }

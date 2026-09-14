@@ -148,9 +148,14 @@ filling the admin chat with verdicts nobody has to act on.
 
 ## How judging works
 
-Messages are not judged one at a time. They accumulate in a window — flushed after
-`judgment-window.seconds` or `judgment-window.max-messages`, whichever comes first — and
-the whole window is judged in a single call.
+Messages are not judged one at a time. They accumulate in a window, judged in a single
+call. The window closes when it is full (`max-messages`), when it holds enough to be worth
+a call (`min-messages`), or when its oldest message has waited too long
+(`max-wait-seconds`) — so a lone message gets a chance to find company first, but a quiet
+chat is still judged.
+
+Clean windows are not announced. Violations are reported immediately; everything else
+becomes an hourly digest in the owner chat, and an hour with nothing in it sends nothing.
 
 The rulebook costs the same tokens per call whatever the batch size, so this covers
 roughly 20× more messages on the same quota. It also suits the pattern rules, which were
