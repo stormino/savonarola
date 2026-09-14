@@ -1,6 +1,7 @@
 package com.github.stormino.savonarola.moderation;
 
 import com.github.stormino.savonarola.config.SavonarolaProperties;
+import com.github.stormino.savonarola.group.GroupKnowledgeService;
 import com.github.stormino.savonarola.llm.JudgmentInput;
 import com.github.stormino.savonarola.llm.LlmException;
 import com.github.stormino.savonarola.llm.LlmJudge;
@@ -31,6 +32,7 @@ public class ModerationPipeline {
 
     private final SavonarolaProperties props;
     private final RuleSetService ruleSet;
+    private final GroupKnowledgeService groupKnowledge;
     private final MessageStoreService messageStore;
     private final ProfileProvider profiles;
     private final LlmJudge judge;
@@ -68,6 +70,8 @@ public class ModerationPipeline {
         metrics.recordJudged(!extendedHistory.isEmpty(), candidates.size());
 
         JudgmentInput input = new JudgmentInput(
+                groupKnowledge.roster(chatId),
+                groupKnowledge.dossier(chatId).orElse(null),
                 rules,
                 ruleSet.examplesByRule(),
                 candidates,

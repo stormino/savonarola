@@ -1,6 +1,7 @@
 package com.github.stormino.savonarola.moderation;
 
 import com.github.stormino.savonarola.TestProperties;
+import com.github.stormino.savonarola.group.GroupKnowledgeService;
 import com.github.stormino.savonarola.llm.LlmException;
 import com.github.stormino.savonarola.llm.LlmJudge;
 import com.github.stormino.savonarola.llm.Violation;
@@ -38,6 +39,7 @@ class ModerationPipelineTest {
     private static final long BRUNO = 2L;
 
     private RuleSetService ruleSet;
+    private GroupKnowledgeService groupKnowledge;
     private MessageStoreService messageStore;
     private ProfileProvider profiles;
     private LlmJudge judge;
@@ -49,6 +51,7 @@ class ModerationPipelineTest {
     @BeforeEach
     void setUp() {
         ruleSet = mock(RuleSetService.class);
+        groupKnowledge = mock(GroupKnowledgeService.class);
         messageStore = mock(MessageStoreService.class);
         profiles = mock(ProfileProvider.class);
         judge = mock(LlmJudge.class);
@@ -57,7 +60,7 @@ class ModerationPipelineTest {
         notifier = mock(AdminNotifier.class);
 
         pipeline = new ModerationPipeline(TestProperties.with(OperatingMode.LOG_ONLY),
-                ruleSet, messageStore, profiles, judge, escalation, router,
+                ruleSet, groupKnowledge, messageStore, profiles, judge, escalation, router,
                 new PipelineMetrics(), notifier);
 
         when(ruleSet.activeRules()).thenReturn(List.of(
@@ -66,6 +69,8 @@ class ModerationPipelineTest {
         when(messageStore.contextWindow(anyLong())).thenReturn(List.of());
         when(escalation.nextAction(anyLong())).thenReturn(Action.mute(5, 0));
         when(profiles.profileFor(anyLong())).thenReturn(null);
+        when(groupKnowledge.roster(anyLong())).thenReturn(List.of("@u1", "@u2"));
+        when(groupKnowledge.dossier(anyLong())).thenReturn(Optional.empty());
     }
 
     private Message message(long messageId, long senderId) {

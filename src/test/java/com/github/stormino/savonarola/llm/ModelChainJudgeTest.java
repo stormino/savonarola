@@ -41,7 +41,7 @@ class ModelChainJudgeTest {
 
     /** A window of three: ids 10, 11 and 12 are judgeable, nothing else is. */
     private static JudgmentInput window() {
-        return new JudgmentInput(List.of(), Map.of(),
+        return new JudgmentInput(List.of("@tizio"), null, List.of(), Map.of(),
                 List.of(message(10, "ciao"), message(11, "sei un buffone"), message(12, "ok")),
                 List.of(), Map.of(), List.of());
     }

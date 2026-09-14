@@ -126,6 +126,7 @@ Telegram on every command, never read from config.
 | `/rulebook pending` | List proposals awaiting review |
 | `/rule list\|enable\|disable <rule_id>` | List rules, or turn one on or off. Disabling keeps the rule and its examples. |
 | `/dynamic <@a\|id> <@b\|id> <description>` | Record a known dynamic between two members. The nightly job never overwrites it. |
+| `/dossier show\|add\|set\|clear` | What the bot knows about the group itself — running jokes, who is a public figure rather than a member |
 | `/mode [LOG_ONLY\|ON_DEMAND_ACTION\|LIVE_ACTION]` | Show or change the operating mode |
 | `/threshold [0.0-1.0]` | Show or change the confidence threshold |
 | `/stats [today\|week\|month\|all]` | Volume, actions, LLM spend and health. On demand only — nothing is ever posted on a schedule. |
@@ -161,6 +162,20 @@ several times in the same window they are sanctioned once, on their strongest vi
 three rungs up the ladder in sixty seconds is not proportionate.
 
 The cost is latency: nothing is acted on until the window closes.
+
+## Who is in the room
+
+Every judgment carries a roster of who has actually spoken recently, and the judge is told
+plainly that anyone else named — players, coaches, journalists, commentators — is a third
+party being discussed, not a member. Rules protecting participants never apply to them.
+
+This exists because the bot flagged an insult against "Puppo", meaning Dario Puppo, a
+journalist the group jokes about. The rule already required the target to be a
+participant; the bot simply had no way to know who was in the room. In a tennis group,
+where half the conversation is about people who are not present, that is the common case.
+
+`/dossier` adds what the roster cannot convey: running jokes, recurring targets, who a
+name refers to. Seed it with the things a moderator who had been here for years would know.
 
 ## Profiling
 

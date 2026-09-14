@@ -17,6 +17,15 @@ public class JudgmentPromptBuilder {
             You will be given the group's rulebook, a recent conversation window, and a
             batch of messages to judge. Messages are in Italian.
 
+            PARTICIPANTS: you will be given the list of people who are actually in this
+            group. Everyone else named in the conversation — players, coaches, umpires,
+            journalists, commentators, any public figure — is a THIRD PARTY being
+            discussed, not a participant. Rules that protect participants never apply to
+            a third party, however harshly the group speaks about them. Mocking a pundit
+            is not mockery of a participant; calling a player names is not an insult to
+            anyone in the room. If you cannot identify the target as someone on the
+            participants list, it is not a violation of a rule that requires a target.
+
             RULES: interpret literally — a message violates a rule only if it clearly
             matches its definition. Do not infer intent beyond what the text and
             context support. Passionate, harsh, or blunt disagreement about tennis
@@ -51,7 +60,20 @@ public class JudgmentPromptBuilder {
     public String userPrompt(JudgmentInput in) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("## RULEBOOK\n");
+        sb.append("## PARTICIPANTS IN THIS GROUP\n");
+        if (in.participants().isEmpty()) {
+            sb.append("(unknown — treat every named person as possibly a third party)\n");
+        } else {
+            in.participants().forEach(name -> sb.append("- ").append(name).append('\n'));
+            sb.append("Anyone named who is NOT on this list is a third party being ")
+              .append("discussed, not a member of this group.\n");
+        }
+
+        if (in.groupDossier() != null && !in.groupDossier().isBlank()) {
+            sb.append("\n## ABOUT THIS GROUP\n").append(in.groupDossier()).append('\n');
+        }
+
+        sb.append("\n## RULEBOOK\n");
         for (var rule : in.activeRules()) {
             sb.append("\n### ").append(rule.getId())
               .append(" (severity: ").append(rule.getSeverity()).append(")\n")

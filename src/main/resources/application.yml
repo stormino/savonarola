@@ -36,6 +36,13 @@ savonarola:
     ladder-minutes: [5, 30, 120, 1440]   # beyond the last rung -> ADMIN_REVIEW
     decay-after-days: 30
 
+  group:
+    # The roster is who has spoken recently. Anyone named but absent from it is a third
+    # party — a player, a journalist — and the rules protecting members do not apply to
+    # them. Without this the judge cannot tell a member from Dario Puppo.
+    roster-days: 14
+    roster-max-names: 40
+
   rule-set:
     # Every example of every active rule is sent on every judgment, so without a cap
     # training would make each judgment steadily more expensive — and the Groq free tier
