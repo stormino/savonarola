@@ -11,7 +11,7 @@ configured alongside it.
 **`SPEC.md` is the source of truth.** It is written in Italian and is more detailed than
 the code. Before changing behaviour, find the relevant section and follow it; when the
 spec and the code disagree, the spec wins unless the code comment explains why it
-departs. Section 17 lists what is deliberately still open — don't invent answers to
+departs. Section 21 lists what is deliberately still open — don't invent answers to
 those, ask. When a decision does resolve one, or when the code has to depart from the
 spec, **edit `SPEC.md` in the same PR**: it is a living document, not a historical
 record, and the two must not drift.
