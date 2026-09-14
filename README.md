@@ -145,6 +145,23 @@ In `LOG_ONLY` there are no sanctions, so the admin chat stays quiet and everythi
 to the owner chat. That is the point: calibrate against the full stream in private without
 filling the admin chat with verdicts nobody has to act on.
 
+## How judging works
+
+Messages are not judged one at a time. They accumulate in a window — flushed after
+`judgment-window.seconds` or `judgment-window.max-messages`, whichever comes first — and
+the whole window is judged in a single call.
+
+The rulebook costs the same tokens per call whatever the batch size, so this covers
+roughly 20× more messages on the same quota. It also suits the pattern rules, which were
+never judgeable from an isolated message.
+
+The model returns only violations, each naming a message id, and any id not in the window
+is discarded — a hallucinated id must never become a mute. If one person breaks a rule
+several times in the same window they are sanctioned once, on their strongest violation:
+three rungs up the ladder in sixty seconds is not proportionate.
+
+The cost is latency: nothing is acted on until the window closes.
+
 ## Profiling
 
 A nightly job (`savonarola.profile.cron`, 04:00 by default) summarises how each active

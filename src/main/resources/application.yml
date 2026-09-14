@@ -43,6 +43,10 @@ savonarola:
     # tokens whatever the rulebook grows to. The full set stays in the database.
     max-examples-per-rule: 6
 
+  judgment-window:
+    seconds: 60
+    max-messages: 25
+
   message-store:
     retention-days: 90
     context-window-size: 15

@@ -4,10 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.stormino.savonarola.config.SavonarolaProperties;
 import com.github.stormino.savonarola.health.HealthMonitor;
-import com.github.stormino.savonarola.moderation.Judgment;
+import com.github.stormino.savonarola.store.StoredMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -21,18 +26,21 @@ public class ModelChainJudge implements LlmJudge {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
-    public Judgment judge(JudgmentInput input) {
+    public List<Violation> judge(JudgmentInput input) {
         String system = prompts.systemPrompt();
         String user = prompts.userPrompt(input);
+
+        Set<Long> judgeable = input.candidates().stream()
+                .map(StoredMessage::getMessageId).collect(Collectors.toSet());
 
         LlmException last = null;
         for (String model : props.llm().active().judgmentModels()) {
             try {
-                String raw = client.complete(model, LlmCallType.JUDGMENT, system, user);
-                Judgment judgment = parse(raw);
+                List<Violation> violations = parse(client.complete(
+                        model, LlmCallType.JUDGMENT, system, user), judgeable);
                 if (last != null) health.recordFallback();
                 health.recordSuccess();
-                return judgment;
+                return violations;
             } catch (LlmException e) {
                 log.warn("Judgment model {} failed, trying next: {}", model, e.getMessage());
                 last = e;
@@ -43,21 +51,43 @@ public class ModelChainJudge implements LlmJudge {
         throw last != null ? last : new LlmException("No judgment models configured");
     }
 
-    private Judgment parse(String raw) {
+    /**
+     * Every cited id is checked against the window. A model that invents an id, or points
+     * at something it was only given as context, must never turn into a mute — so those
+     * are dropped rather than trusted.
+     */
+    private List<Violation> parse(String raw, Set<Long> judgeable) {
         try {
             String cleaned = raw.trim()
                     .replaceAll("^```(?:json)?", "")
                     .replaceAll("```$", "")
                     .trim();
-            JsonNode node = mapper.readTree(cleaned);
-            boolean violated = node.path("violated").asBoolean(false);
-            String ruleId = node.path("ruleId").isNull() ? null : node.path("ruleId").asText(null);
-            double confidence = node.path("confidence").asDouble(0.0);
-            String reasoning = node.path("reasoning").asText("");
-            if (violated && (ruleId == null || ruleId.isBlank())) {
-                throw new LlmException("Model reported a violation without a ruleId");
+            JsonNode root = mapper.readTree(cleaned);
+            JsonNode array = root.path("violations");
+            if (!array.isArray()) {
+                throw new LlmException("Judgment payload has no violations array");
             }
-            return new Judgment(violated, ruleId, confidence, reasoning);
+
+            List<Violation> violations = new ArrayList<>();
+            for (JsonNode node : array) {
+                long messageId = node.path("messageId").asLong(-1);
+                String ruleId = node.path("ruleId").asText("").trim();
+
+                if (!judgeable.contains(messageId)) {
+                    log.warn("Judge cited message {} which was not in the window — ignored",
+                            messageId);
+                    continue;
+                }
+                if (ruleId.isBlank()) {
+                    log.warn("Judge reported a violation on {} without a ruleId — ignored",
+                            messageId);
+                    continue;
+                }
+                violations.add(new Violation(messageId, ruleId,
+                        node.path("confidence").asDouble(0.0),
+                        node.path("reasoning").asText("")));
+            }
+            return violations;
         } catch (LlmException e) {
             throw e;
         } catch (Exception e) {

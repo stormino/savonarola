@@ -14,6 +14,7 @@ public record SavonarolaProperties(
         PatternDetection patternDetection,
         Escalation escalation,
         MessageStore messageStore,
+        JudgmentWindow judgmentWindow,
         RuleSet ruleSet,
         Llm llm,
         Profile profile,
@@ -36,6 +37,14 @@ public record SavonarolaProperties(
     public record Escalation(List<Integer> ladderMinutes, int decayAfterDays) {}
 
     public record MessageStore(int retentionDays, int contextWindowSize) {}
+
+    /**
+     * Messages are judged in batches, not one at a time: the rulebook costs the same per
+     * call whatever the batch size, so a window of 25 covers 25 messages for barely more
+     * than one. Flushed on whichever limit is reached first — time alone lets a burst
+     * build an enormous prompt, size alone leaves a quiet chat unjudged.
+     */
+    public record JudgmentWindow(int seconds, int maxMessages) {}
 
     /** Caps what reaches the prompt, not what is stored: every example is sent every time. */
     public record RuleSet(int maxExamplesPerRule) {}

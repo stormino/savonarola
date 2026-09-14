@@ -2,11 +2,12 @@ package com.github.stormino.savonarola.llm;
 
 import com.github.stormino.savonarola.TestProperties;
 import com.github.stormino.savonarola.health.HealthMonitor;
-import com.github.stormino.savonarola.moderation.Judgment;
 import com.github.stormino.savonarola.moderation.OperatingMode;
+import com.github.stormino.savonarola.store.StoredMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -34,11 +35,15 @@ class ModelChainJudgeTest {
                 TestProperties.with(OperatingMode.LOG_ONLY), health);
     }
 
-    private static JudgmentInput input() {
+    private static StoredMessage message(long messageId, String text) {
+        return new StoredMessage(1L, messageId, 3L, "@tizio", text, null, null, Instant.now());
+    }
+
+    /** A window of three: ids 10, 11 and 12 are judgeable, nothing else is. */
+    private static JudgmentInput window() {
         return new JudgmentInput(List.of(), Map.of(),
-                new com.github.stormino.savonarola.store.StoredMessage(
-                        1L, 2L, 3L, "tizio", "testo", null, null, java.time.Instant.now()),
-                List.of(), null, null, List.of());
+                List.of(message(10, "ciao"), message(11, "sei un buffone"), message(12, "ok")),
+                List.of(), Map.of(), List.of());
     }
 
     private void respondsWith(String model, String payload) {
@@ -46,69 +51,84 @@ class ModelChainJudgeTest {
     }
 
     @Test
-    void parsesAStructuredVerdict() {
+    void returnsOnlyTheMessagesTheJudgeFlagged() {
         respondsWith("primary", """
-                {"violated": true, "ruleId": "direct_insult", "confidence": 0.82,
-                 "reasoning": "Insulto rivolto a un partecipante."}
+                {"violations": [
+                  {"messageId": 11, "ruleId": "direct_insult", "confidence": 0.9,
+                   "reasoning": "Insulto diretto."}]}
                 """);
 
-        Judgment judgment = judge.judge(input());
+        List<Violation> violations = judge.judge(window());
 
-        assertThat(judgment.violated()).isTrue();
-        assertThat(judgment.ruleId()).isEqualTo("direct_insult");
-        assertThat(judgment.confidence()).isEqualTo(0.82);
+        assertThat(violations).singleElement().satisfies(v -> {
+            assertThat(v.messageId()).isEqualTo(11);
+            assertThat(v.ruleId()).isEqualTo("direct_insult");
+            assertThat(v.confidence()).isEqualTo(0.9);
+        });
         verify(health).recordSuccess();
+    }
+
+    @Test
+    void anEmptyListIsAValidVerdictAndTheCommonOne() {
+        respondsWith("primary", "{\"violations\": []}");
+
+        assertThat(judge.judge(window())).isEmpty();
+        verify(health).recordSuccess();
+        verify(health, never()).recordFailure(anyString());
+    }
+
+    @Test
+    void reportsEveryViolationInTheWindow() {
+        respondsWith("primary", """
+                {"violations": [
+                  {"messageId": 10, "ruleId": "mockery_of_opinions", "confidence": 0.7, "reasoning": "a"},
+                  {"messageId": 11, "ruleId": "direct_insult", "confidence": 0.95, "reasoning": "b"}]}
+                """);
+
+        assertThat(judge.judge(window())).hasSize(2)
+                .extracting(Violation::messageId).containsExactly(10L, 11L);
+    }
+
+    @Test
+    void discardsAnIdThatWasNotInTheWindow() {
+        respondsWith("primary", """
+                {"violations": [
+                  {"messageId": 999, "ruleId": "direct_insult", "confidence": 0.99, "reasoning": "x"},
+                  {"messageId": 11, "ruleId": "direct_insult", "confidence": 0.9, "reasoning": "y"}]}
+                """);
+
+        assertThat(judge.judge(window()))
+                .extracting(Violation::messageId).containsExactly(11L);
+    }
+
+    @Test
+    void discardsAViolationThatNamesNoRule() {
+        respondsWith("primary", """
+                {"violations": [{"messageId": 11, "ruleId": "", "confidence": 0.9, "reasoning": "x"}]}
+                """);
+
+        assertThat(judge.judge(window())).isEmpty();
     }
 
     @Test
     void toleratesJsonWrappedInAMarkdownFence() {
         respondsWith("primary", """
                 ```json
-                {"violated": false, "ruleId": null, "confidence": 0.1, "reasoning": "Solo tennis."}
+                {"violations": []}
                 ```""");
 
-        Judgment judgment = judge.judge(input());
-
-        assertThat(judgment.violated()).isFalse();
-        assertThat(judgment.ruleId()).isNull();
-        assertThat(judgment.reasoning()).isEqualTo("Solo tennis.");
+        assertThat(judge.judge(window())).isEmpty();
     }
 
     @Test
-    void fallsBackToTheSecondaryModelWhenThePrimaryFails() {
+    void fallsBackToTheSecondaryModelAndCountsIt() {
         when(client.complete(eq("primary"), any(), anyString(), anyString()))
                 .thenThrow(new LlmException("429 rate limited"));
-        respondsWith("fallback", """
-                {"violated": false, "ruleId": null, "confidence": 0.0, "reasoning": "Ok."}
-                """);
+        respondsWith("fallback", "{\"violations\": []}");
 
-        assertThat(judge.judge(input()).violated()).isFalse();
-        verify(health).recordSuccess();
-        verify(health, never()).recordFailure(anyString());
-    }
-
-    @Test
-    void countsAFallbackSoDegradationIsVisibleBeforeAnythingBreaks() {
-        when(client.complete(eq("primary"), any(), anyString(), anyString()))
-                .thenThrow(new LlmException("429 rate limited"));
-        respondsWith("fallback", """
-                {"violated": false, "ruleId": null, "confidence": 0.0, "reasoning": "Ok."}
-                """);
-
-        judge.judge(input());
-
+        assertThat(judge.judge(window())).isEmpty();
         verify(health).recordFallback();
-    }
-
-    @Test
-    void countsNoFallbackWhenThePrimaryAnswers() {
-        respondsWith("primary", """
-                {"violated": false, "ruleId": null, "confidence": 0.0, "reasoning": "Ok."}
-                """);
-
-        judge.judge(input());
-
-        verify(health, never()).recordFallback();
+        verify(health).recordSuccess();
     }
 
     @Test
@@ -116,20 +136,17 @@ class ModelChainJudgeTest {
         when(client.complete(anyString(), any(), anyString(), anyString()))
                 .thenThrow(new LlmException("upstream down"));
 
-        assertThatThrownBy(() -> judge.judge(input())).isInstanceOf(LlmException.class);
+        assertThatThrownBy(() -> judge.judge(window())).isInstanceOf(LlmException.class);
 
         verify(health).recordFailure(anyString());
         verify(health, never()).recordSuccess();
     }
 
     @Test
-    void rejectsAVerdictThatClaimsAViolationWithoutNamingARule() {
-        respondsWith("primary", """
-                {"violated": true, "ruleId": null, "confidence": 0.9, "reasoning": "Brutto."}
-                """);
+    void refusesAPayloadWithNoViolationsArray() {
+        respondsWith("primary", "{\"verdict\": \"fine\"}");
         respondsWith("fallback", "not json at all");
 
-        assertThatThrownBy(() -> judge.judge(input())).isInstanceOf(LlmException.class);
-        verify(health).recordFailure(anyString());
+        assertThatThrownBy(() -> judge.judge(window())).isInstanceOf(LlmException.class);
     }
 }

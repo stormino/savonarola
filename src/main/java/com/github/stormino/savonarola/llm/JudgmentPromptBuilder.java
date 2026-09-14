@@ -6,14 +6,16 @@ import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class JudgmentPromptBuilder {
 
     private static final String SYSTEM_PROMPT = """
             You are a moderation assistant for an Italian tennis-fan Telegram group.
-            You will be given the group's rulebook, a recent conversation window, and
-            the message to judge. Messages are in Italian.
+            You will be given the group's rulebook, a recent conversation window, and a
+            batch of messages to judge. Messages are in Italian.
 
             RULES: interpret literally — a message violates a rule only if it clearly
             matches its definition. Do not infer intent beyond what the text and
@@ -27,12 +29,19 @@ public class JudgmentPromptBuilder {
             sender's usual style — the profile disambiguates tone, it does not excuse
             crossing a line.
 
-            OUTPUT: respond with a single JSON object and nothing else:
-            {"violated": boolean, "ruleId": string|null, "confidence": number 0-1, "reasoning": string}
+            OUTPUT: respond with a single JSON object listing ONLY the messages that
+            violate a rule:
+            {"violations": [{"messageId": number, "ruleId": string,
+                             "confidence": number 0-1, "reasoning": string}]}
+
+            Return {"violations": []} when nothing breaks a rule. That is the common and
+            correct answer for ordinary conversation, however heated it gets.
+
+            Cite only ids that appear under MESSAGES TO JUDGE, and judge only those
+            messages — the conversation above them is context, not something to rule on.
             "reasoning" must be written in Italian, one or two sentences, readable by a
-            human admin deciding whether to confirm a penalty. Always fill it in, even
-            when violated is false. If uncertain, prefer lower confidence over a forced
-            binary call.
+            human admin deciding whether to confirm a penalty. If uncertain, prefer a
+            lower confidence over a forced call.
             """;
 
     public String systemPrompt() {
@@ -58,20 +67,28 @@ public class JudgmentPromptBuilder {
             }
         }
 
-        if (in.senderProfile() != null) {
-            sb.append("\n## SENDER PROFILE\n").append(in.senderProfile()).append('\n');
-        }
-        if (in.targetProfile() != null) {
-            sb.append("\n## RECIPIENT PROFILE\n").append(in.targetProfile()).append('\n');
+        if (!in.profilesBySender().isEmpty()) {
+            sb.append("\n## SENDER PROFILES\n");
+            in.profilesBySender().forEach((userId, profile) ->
+                    sb.append("- user ").append(userId).append(": ").append(profile).append('\n'));
         }
 
-        sb.append("\n## RECENT CONVERSATION (oldest first)\n");
-        in.contextWindow().stream()
+        // The candidates are also the tail of the chat, so drop them from the context
+        // block rather than showing every message twice.
+        Set<Long> candidateIds = in.candidates().stream()
+                .map(StoredMessage::getMessageId).collect(Collectors.toSet());
+        List<StoredMessage> context = in.contextWindow().stream()
+                .filter(m -> !candidateIds.contains(m.getMessageId()))
                 .sorted(Comparator.comparing(StoredMessage::getSentAt))
-                .forEach(m -> sb.append(format(m)).append('\n'));
+                .toList();
+
+        if (!context.isEmpty()) {
+            sb.append("\n## EARLIER CONVERSATION (context only, do not judge)\n");
+            context.forEach(m -> sb.append(format(m)).append('\n'));
+        }
 
         if (in.extendedHistory() != null && !in.extendedHistory().isEmpty()) {
-            sb.append("\n## PRIOR INTERACTIONS FROM SENDER TOWARD THIS RECIPIENT\n");
+            sb.append("\n## PRIOR INTERACTIONS BETWEEN PARTICIPANTS IN THIS WINDOW\n");
             sb.append("(provided because a possible pattern was detected; judge whether it is ")
               .append("a recurring targeted pattern or ordinary recurring banter)\n");
             in.extendedHistory().stream()
@@ -79,7 +96,11 @@ public class JudgmentPromptBuilder {
                     .forEach(m -> sb.append(format(m)).append('\n'));
         }
 
-        sb.append("\n## MESSAGE TO JUDGE\n").append(format(in.targetMessage())).append('\n');
+        sb.append("\n## MESSAGES TO JUDGE\n");
+        in.candidates().stream()
+                .sorted(Comparator.comparing(StoredMessage::getSentAt))
+                .forEach(m -> sb.append("[id ").append(m.getMessageId()).append("] ")
+                        .append(m.getSenderName()).append(": ").append(m.getText()).append('\n'));
         return sb.toString();
     }
 

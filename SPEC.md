@@ -83,21 +83,30 @@ Sotto soglia di confidenza, in tutte le modalità (tranne `LOG_ONLY`, dove tutto
 
 ## 4. Pipeline di giudizio
 
-### 4.1 Flusso per messaggio
+### 4.1 Flusso per finestra
 
 **I messaggi modificati non vengono giudicati** (deciso). Il bot giudica alla ricezione: modificare un insulto dopo non annulla il giudizio già dato. Resta scoperto il caso inverso — messaggio innocuo poi modificato in insulto — accettato consapevolmente: la chat è matura e il costo di una chiamata LLM per ogni correzione di refuso non lo giustifica.
+
+I messaggi **non vengono giudicati uno alla volta**: si accumulano in una finestra, giudicata in un'unica chiamata. Il regolamento costa gli stessi token a ogni chiamata indipendentemente da quanti messaggi contiene, quindi una finestra da 25 ne copre 25 al prezzo di poco più di uno — circa 20 volte più messaggi coperti a parità di quota (sezione 14). È anche la forma giusta per le regole definite su un pattern: `intimidation_pattern` e `troll_hit_and_run` non sono giudicabili su un messaggio isolato.
 
 ```
 Messaggio in arrivo
   → salvato nel message store (sezione 6)
-  → sender è admin (via getChatAdministrators)? SÌ → nessun giudizio, pipeline termina qui
-  → check leggero: negativeInteractionCount(sender, target) sopra soglia (media/bassa)?
-      SÌ → recupero storico esteso sender→target dal message store
-      NO → solo context window immediato (ultimi 15 messaggi)
-  → chiamata LLM di giudizio (sezione 4.2), su TUTTE le regole attive in una sola chiamata
-  → output: decision object (sezione 5)
+  → sender è admin (via getChatAdministrators)? SÌ → escluso dalla finestra
+  → accodato nella finestra di giudizio
+
+Finestra chiusa (per tempo O per numero di messaggi, il primo dei due)
+  → check leggero per ogni coppia sender→target nella finestra:
+      negativeInteractionCount sopra soglia? SÌ → storico esteso dal message store
+  → UNA chiamata LLM (sezione 4.2) su tutte le regole attive e tutti i messaggi
+  → output: elenco delle sole violazioni, con l'id del messaggio (sezione 4.3)
+  → id non presenti nella finestra vengono scartati
+  → **una sola sanzione per utente per finestra**: più violazioni nello stesso minuto
+    sono un episodio, non una scalata della ladder — resta quella con confidence più alta
   → routing in base a operatingMode e confidence (sezione 3)
 ```
+
+Entrambi i limiti della finestra sono configurabili (`judgmentWindow.seconds`, `judgmentWindow.maxMessages`). Solo il tempo lascerebbe che una raffica costruisca un prompt enorme; solo la dimensione lascerebbe una chat tranquilla non giudicata. Il costo è la latenza: una violazione non viene sanzionata prima della chiusura della finestra.
 
 ### 4.2 Chiamata di giudizio — input assemblati
 
@@ -137,8 +146,9 @@ uncertain, prefer lower confidence over a forced binary call.
 
 ### 4.4 Principi di design della chiamata
 
-- **Una chiamata per messaggio, non una per regola**: più economico e più coerente (il modello vede il quadro intero).
-- **`reasoning` sempre presente**, anche quando `violated: false` — finisce nel log e nel messaggio `/execute`, deve essere comprensibile a un admin che decide.
+- **Una chiamata per finestra, non una per messaggio né una per regola**: molto più economico, e il modello vede l'intero scambio invece di una frase isolata.
+- **`reasoning` sempre presente su ogni violazione** — finisce nel log e nel messaggio `/execute`, deve essere comprensibile a un admin che decide. Per i messaggi che non violano nulla non c'è invece alcun `reasoning`: il modello restituisce solo le violazioni, e il silenzio su un messaggio è il verdetto che andava bene.
+- **Gli id citati vengono validati** contro la finestra. Un id inventato, o riferito a un messaggio fornito solo come contesto, viene scartato: un'allucinazione non deve mai diventare un mute.
 
 ---
 

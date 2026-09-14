@@ -15,16 +15,22 @@ public class PipelineMetrics {
     private final AtomicLong judged = new AtomicLong();
     private final AtomicLong extendedHistoryUsed = new AtomicLong();
 
-    public void recordJudged(boolean usedExtendedHistory) {
-        judged.incrementAndGet();
+    private final AtomicLong windows = new AtomicLong();
+
+    public void recordJudged(boolean usedExtendedHistory, int messagesInWindow) {
+        windows.incrementAndGet();
+        judged.addAndGet(messagesInWindow);
         if (usedExtendedHistory) extendedHistoryUsed.incrementAndGet();
     }
+
+    public long windows() { return windows.get(); }
 
     public long judged() { return judged.get(); }
     public long extendedHistoryUsed() { return extendedHistoryUsed.get(); }
 
+    /** Against windows, not messages: the lookup is decided once per window. */
     public double extendedHistoryRate() {
-        long total = judged.get();
+        long total = windows.get();
         return total == 0 ? 0 : (double) extendedHistoryUsed.get() / total;
     }
 }

@@ -131,14 +131,15 @@ class StatsCommandTest {
 
     @Test
     void reportsHowOftenTheExpensiveLookupFired() {
-        metrics.recordJudged(true);
-        metrics.recordJudged(false);
-        metrics.recordJudged(false);
-        metrics.recordJudged(false);
+        metrics.recordJudged(true, 10);
+        metrics.recordJudged(false, 8);
+        metrics.recordJudged(false, 5);
+        metrics.recordJudged(false, 2);
 
         command.handle(msg, List.of("today"));
 
-        assertThat(report()).contains("25.0%").contains("4 giudizi");
+        // One window in four used the lookup; 25 messages were judged across them.
+        assertThat(report()).contains("25.0%").contains("25 messaggi");
     }
 
     @Test
