@@ -82,7 +82,7 @@ public class ConversationTracker {
             batch = List.copyOf(unjudged.subList(from, unjudged.size()));
             unjudged.clear();
         }
-        log.debug("Sweeping {} unjudged messages", batch.size());
+        log.info("Sweep: judging {} messages nothing replied to", batch.size());
         pipeline.judge(batch, List.of());
     }
 
@@ -93,8 +93,8 @@ public class ConversationTracker {
         while (it.hasNext()) {
             Episode episode = it.next().getValue();
             if (episode.isIdle(props.conflict().idleSeconds())) {
-                log.debug("Episode closed after {} messages and {} deliberations",
-                        episode.size(), episode.deliberations());
+                log.info("Episode closed: {} messages, {} deliberations, participants {}",
+                        episode.size(), episode.deliberations(), episode.participants());
                 it.remove();
             }
         }
@@ -107,8 +107,8 @@ public class ConversationTracker {
         List<Message> context = episode.priorContext(cap);
         episode.markDeliberated();
 
-        log.debug("Deliberating on {} new messages in an episode between {} ({} for context)",
-                pending.size(), episode.participants(), context.size());
+        log.info("Episode deliberation #{}: {} new messages between {} ({} for context)",
+                episode.deliberations(), pending.size(), episode.participants(), context.size());
         pipeline.judge(pending, context);
     }
 
@@ -132,7 +132,7 @@ public class ConversationTracker {
     private Episode open(long senderId, long targetId) {
         Episode episode = new Episode();
         episodes.put(senderId, episode);
-        log.debug("Episode opened between {} and {}", senderId, targetId);
+        log.info("Episode opened between {} and {}", senderId, targetId);
         return episode;
     }
 
