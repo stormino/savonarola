@@ -1,7 +1,7 @@
 package com.github.stormino.savonarola.telegram;
 
 import com.github.stormino.savonarola.config.SavonarolaProperties;
-import com.github.stormino.savonarola.moderation.JudgmentWindow;
+import com.github.stormino.savonarola.conversation.ConversationTracker;
 import com.github.stormino.savonarola.store.MessageStoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ public class SavonarolaBot implements LongPollingSingleThreadUpdateConsumer {
     private final SavonarolaProperties props;
     private final AdminRegistry adminRegistry;
     private final MessageStoreService messageStore;
-    private final JudgmentWindow window;
+    private final ConversationTracker conversation;
     private final CommandDispatcher commands;
 
     @Override
@@ -46,6 +46,6 @@ public class SavonarolaBot implements LongPollingSingleThreadUpdateConsumer {
         // No commands are accepted in the main chat: the bot stays invisible there.
         if (msg.getText().startsWith("/")) return;
 
-        window.offer(msg);
+        conversation.observe(msg);
     }
 }

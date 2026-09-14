@@ -73,7 +73,7 @@ public final class TestProperties {
                 new SavonarolaProperties.PatternDetection(3, 30),
                 new SavonarolaProperties.Escalation(List.of(5, 30, 120, 1440), 30),
                 new SavonarolaProperties.MessageStore(90, 15),
-                new SavonarolaProperties.JudgmentWindow(15, 180, 25, 4),
+                new SavonarolaProperties.Conflict(15, 3, 300, 600, 5, 40, 15, 30),
                 ruleSet,
                 new SavonarolaProperties.Group(14, 40),
                 llm,

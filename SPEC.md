@@ -87,7 +87,13 @@ Sotto soglia di confidenza, in tutte le modalità (tranne `LOG_ONLY`, dove tutto
 
 **I messaggi modificati non vengono giudicati** (deciso). Il bot giudica alla ricezione: modificare un insulto dopo non annulla il giudizio già dato. Resta scoperto il caso inverso — messaggio innocuo poi modificato in insulto — accettato consapevolmente: la chat è matura e il costo di una chiamata LLM per ogni correzione di refuso non lo giustifica.
 
-I messaggi **non vengono giudicati uno alla volta**: si accumulano in una finestra, giudicata in un'unica chiamata. Il regolamento costa gli stessi token a ogni chiamata indipendentemente da quanti messaggi contiene, quindi una finestra da 25 ne copre 25 al prezzo di poco più di uno — circa 20 volte più messaggi coperti a parità di quota (sezione 14). È anche la forma giusta per le regole definite su un pattern: `intimidation_pattern` e `troll_hit_and_run` non sono giudicabili su un messaggio isolato.
+I messaggi **non vengono giudicati uno alla volta, né a fette di orologio**. Il bot osserva il flusso e decide *quando* pensare, come farebbe un moderatore umano: la conversazione ordinaria non raggiunge mai un modello.
+
+Ogni messaggio aggiorna gratuitamente dei segnali strutturali — chi risponde a chi, quanto in fretta, quante volte. Quando due persone si rimbalzano abbastanza risposte in poco tempo si apre un **episodio** (sezione 18), ed è l'episodio a essere deliberato, non una finestra arbitraria. Un episodio già visto viene riesaminato solo quando la discussione si è mossa davvero, e in quel caso **si giudica solo ciò che è nuovo**: i messaggi già valutati viaggiano come contesto, perché rigiudicarli significherebbe poter sanzionare due volte lo stesso messaggio.
+
+Gli episodi però intercettano le liti, non l'insulto isolato a cui nessuno risponde. Per questo resta una **passata di sicurezza** periodica e rara su ciò che non è stato giudicato: senza, un'offesa singola sarebbe invisibile.
+
+La vecchia finestra a tempo fisso è stata rimossa. Giudicava fette di orologio a prescindere da cosa vi accadesse dentro, e in una chat non frenetica produceva soprattutto finestre da un messaggio. Il regolamento costa gli stessi token a ogni chiamata indipendentemente da quanti messaggi contiene, quindi una finestra da 25 ne copre 25 al prezzo di poco più di uno — circa 20 volte più messaggi coperti a parità di quota (sezione 14). È anche la forma giusta per le regole definite su un pattern: `intimidation_pattern` e `troll_hit_and_run` non sono giudicabili su un messaggio isolato.
 
 ```
 Messaggio in arrivo

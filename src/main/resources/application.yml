@@ -50,16 +50,28 @@ savonarola:
     # tokens whatever the rulebook grows to. The full set stays in the database.
     max-examples-per-rule: 6
 
-  judgment-window:
-    # How often readiness is checked. Not how often a window is flushed.
+  conflict:
+    # How often episodes are checked for staleness. Not a judgment cadence.
     tick-seconds: 15
-    # A window flushes when it is full, or when it holds min-messages and has waited a
-    # tick, or when its oldest message has waited this long — so nothing is left unjudged,
-    # but a lone message is given a chance to find company first. A fixed tick that
-    # emptied the buffer every time paid the full rulebook to judge one line.
-    max-wait-seconds: 180
-    max-messages: 25
-    min-messages: 4
+
+    # An episode opens when the same two people exchange this many replies inside the
+    # window. Below that the bot watches for free and calls nothing.
+    pair-exchanges: 3
+    pair-window-seconds: 300
+
+    # An episode closes after this much quiet. A later flare-up is a NEW episode that
+    # starts again at OBSERVE (SPEC 18), not a continuation of the old one.
+    idle-seconds: 600
+
+    # A live episode is looked at again only once the argument has actually moved on.
+    redeliberate-every: 5
+    max-episode-messages: 40
+
+    # Safety net. Episodes catch fights; they do not catch a single insult nobody
+    # answers. This sweeps whatever has not been judged, rarely and cheaply, so an
+    # isolated offence is not invisible.
+    sweep-minutes: 15
+    sweep-max-messages: 30
 
   message-store:
     retention-days: 90

@@ -14,7 +14,7 @@ public record SavonarolaProperties(
         PatternDetection patternDetection,
         Escalation escalation,
         MessageStore messageStore,
-        JudgmentWindow judgmentWindow,
+        Conflict conflict,
         RuleSet ruleSet,
         Group group,
         Llm llm,
@@ -45,8 +45,13 @@ public record SavonarolaProperties(
      * than one. Flushed on whichever limit is reached first — time alone lets a burst
      * build an enormous prompt, size alone leaves a quiet chat unjudged.
      */
-    public record JudgmentWindow(int tickSeconds, int maxWaitSeconds, int maxMessages,
-                                int minMessages) {}
+    /**
+      * When the bot starts paying attention. Below these thresholds nothing reaches a
+      * model at all — the signals are structural and free to compute.
+      */
+    public record Conflict(int tickSeconds, int pairExchanges, int pairWindowSeconds,
+                           int idleSeconds, int redeliberateEvery, int maxEpisodeMessages,
+                           int sweepMinutes, int sweepMaxMessages) {}
 
     /** How much of the group's own context travels with every judgment. */
     public record Group(int rosterDays, int rosterMaxNames) {}

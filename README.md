@@ -148,11 +148,20 @@ filling the admin chat with verdicts nobody has to act on.
 
 ## How judging works
 
-Messages are not judged one at a time. They accumulate in a window, judged in a single
-call. The window closes when it is full (`max-messages`), when it holds enough to be worth
-a call (`min-messages`), or when its oldest message has waited too long
-(`max-wait-seconds`) — so a lone message gets a chance to find company first, but a quiet
-chat is still judged.
+Messages are not judged one at a time, nor in slices of the clock. The bot watches the
+stream and decides when to think.
+
+Every message updates structural signals for free — who is replying to whom, how fast, how
+often. When a pair exchanges enough replies inside `pair-window-seconds`, an **episode**
+opens, and the episode is what gets deliberated. Ordinary conversation never reaches a
+model at all.
+
+A live episode is re-examined only once the argument has moved on, and then **only the new
+messages are judged**: what was already ruled on travels as context, so nothing can be
+sanctioned twice.
+
+Episodes catch arguments but not a single insult nobody answers, so a slow background
+sweep (`sweep-minutes`) picks up whatever went unjudged.
 
 Clean windows are not announced. Violations are reported immediately; everything else
 becomes an hourly digest in the owner chat, and an hour with nothing in it sends nothing.

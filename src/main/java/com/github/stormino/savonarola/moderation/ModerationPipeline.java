@@ -42,6 +42,16 @@ public class ModerationPipeline {
 
     @Async
     public void judge(List<Message> window) {
+        judge(window, List.of());
+    }
+
+    /**
+     * {@code priorContext} is what the model may read but must not rule on — messages from
+     * the same episode that have already been judged. Keeping them apart is what stops a
+     * re-examined argument sanctioning the same message twice.
+     */
+    @Async
+    public void judge(List<Message> window, List<Message> priorContext) {
         if (window.isEmpty()) return;
 
         var rules = ruleSet.activeRules();
@@ -74,7 +84,7 @@ public class ModerationPipeline {
                 rules,
                 ruleSet.examplesByRule(),
                 candidates,
-                messageStore.contextWindow(chatId),
+                contextFor(chatId, priorContext),
                 profilesOf(candidates),
                 extendedHistory);
 
@@ -116,6 +126,14 @@ public class ModerationPipeline {
                     (a, b) -> a.confidence() >= b.confidence() ? a : b);
         }
         return new ArrayList<>(strongest.values());
+    }
+
+    private List<StoredMessage> contextFor(long chatId, List<Message> priorContext) {
+        List<StoredMessage> context = new ArrayList<>(messageStore.contextWindow(chatId));
+        for (Message msg : priorContext) {
+            messageStore.find(chatId, msg.getMessageId()).ifPresent(context::add);
+        }
+        return context.stream().distinct().toList();
     }
 
     private Map<Long, String> profilesOf(List<StoredMessage> candidates) {
