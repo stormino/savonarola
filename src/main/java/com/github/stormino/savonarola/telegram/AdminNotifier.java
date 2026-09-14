@@ -9,7 +9,12 @@ import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
-/** Everything deliberative goes here — the main chat stays silent. */
+/**
+  * Two audiences. The admin chat carries sanctions and system alerts — things someone has
+  * to act on. The owner chat, when configured, carries the full judgment stream including
+  * the messages that turned out fine, which is useful while calibrating and noise after.
+  * The main chat still sees nothing either way.
+  */
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -20,6 +25,12 @@ public class AdminNotifier {
 
     public void send(String text) {
         sendTo(props.telegram().adminChatId(), text, null);
+    }
+
+    /** The verbose stream. Silently dropped when no owner chat is configured. */
+    public void sendToOwner(String text) {
+        if (!props.telegram().hasOwnerChat()) return;
+        sendTo(props.telegram().ownerChatId(), text, null);
     }
 
     public void sendSystem(String text) {

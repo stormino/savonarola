@@ -67,9 +67,15 @@ operatingMode: LOG_ONLY | ON_DEMAND_ACTION | LIVE_ACTION
 
 | Modalità | Comportamento |
 |---|---|
-| `LOG_ONLY` | Dry run. Ogni decisione (violata o no) loggata su Admin schiaffers. Nessuna azione possibile, nemmeno manuale: `/execute` viene rifiutato. Le violazioni vengono comunque persistite con status `logged` — senza una traccia, la modalità che esiste per misurare l'accuratezza non lascerebbe nulla da misurare. Serve a validare l'accuratezza prima di dare potere reale al bot. |
+| `LOG_ONLY` | Dry run. Ogni decisione (violata o no) loggata sulla **chat owner** (sezione 3.1), non su Admin schiaffers. Nessuna azione possibile, nemmeno manuale: `/execute` viene rifiutato. Le violazioni vengono comunque persistite con status `logged` — senza una traccia, la modalità che esiste per misurare l'accuratezza non lascerebbe nulla da misurare. Serve a validare l'accuratezza prima di dare potere reale al bot. |
 | `ON_DEMAND_ACTION` | Sopra soglia di confidenza, il bot prepara la decisione (regola, motivazione, azione suggerita) e la posta su Admin schiaffers con un comando pronto (`/execute`). Un admin conferma, modifica o scarta. |
 | `LIVE_ACTION` | Stesso giudizio, ma l'azione parte autonomamente sopra soglia, senza attesa. |
+
+### 3.1 Destinatari dei report
+
+Il canale admin è riservato alle **sanzioni**: proposte in attesa di `/execute`, esecuzioni, hand-off al tetto della ladder, più gli alert di sistema (sezione 15) e le risposte ai comandi. Nulla che non richieda un'azione umana.
+
+Il flusso completo dei giudizi — comprese le valutazioni che non hanno trovato nulla e le segnalazioni sotto soglia — va su una **chat privata dell'owner**, configurabile e disattivabile. Serve a calibrare il bot senza riempire il canale admin di verdetti su cui nessuno deve agire. In `LOG_ONLY` non esistono sanzioni, quindi il canale admin resta silenzioso.
 
 Sotto soglia di confidenza, in tutte le modalità (tranne `LOG_ONLY`, dove tutto è comunque solo loggato): flag informativo su Admin schiaffers, senza azione suggerita pronta — il bot non propone una condanna quando non è abbastanza sicuro.
 

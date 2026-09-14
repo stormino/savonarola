@@ -20,7 +20,13 @@ public record SavonarolaProperties(
         Health health,
         ActionAnnouncement actionAnnouncement
 ) {
-    public record Telegram(long mainChatId, long adminChatId, String token) {}
+    /** ownerChatId is the verbose stream; 0 disables it. The admin chat never sees it. */
+    public record Telegram(long mainChatId, long adminChatId, long ownerChatId, String token) {
+
+        public boolean hasOwnerChat() {
+            return ownerChatId != 0;
+        }
+    }
 
     public record Decision(double confidenceThreshold) {}
 

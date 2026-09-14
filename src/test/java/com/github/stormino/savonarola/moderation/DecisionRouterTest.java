@@ -66,7 +66,8 @@ class DecisionRouterTest {
         assertThat(saved.getValue().getRuleId()).isEqualTo("direct_insult");
 
         verifyNoInteractions(executor);
-        verify(notifier).send(anyString());
+        verify(notifier).sendToOwner(anyString());
+        verify(notifier, never()).send(anyString());
     }
 
     @Test
@@ -75,7 +76,17 @@ class DecisionRouterTest {
                 .route(message, Judgment.noViolation("Critica dura ma legittima."), null);
 
         verify(decisions, never()).save(org.mockito.ArgumentMatchers.any());
-        verify(notifier).send(anyString());
+        verify(notifier).sendToOwner(anyString());
+    }
+
+    @Test
+    void keepsTheAdminChatForSanctionsOnly() {
+        router(OperatingMode.LOG_ONLY).route(message, violation(0.9), Action.mute(5, 0));
+        router(OperatingMode.ON_DEMAND_ACTION).route(message, violation(0.4), Action.mute(5, 0));
+
+        // A dry run and a sub-threshold flag: nothing anyone has to act on.
+        verify(notifier, never()).send(anyString());
+        verify(notifier, org.mockito.Mockito.times(2)).sendToOwner(anyString());
     }
 
     @Test
@@ -94,7 +105,7 @@ class DecisionRouterTest {
         verifyNoInteractions(executor);
 
         ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
-        verify(notifier).send(text.capture());
+        verify(notifier).sendToOwner(text.capture());
         assertThat(text.getValue()).contains("bassa confidenza");
     }
 
@@ -143,7 +154,7 @@ class DecisionRouterTest {
         router(OperatingMode.LOG_ONLY).route(message, judgment, Action.mute(5, 0));
 
         ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
-        verify(notifier).send(text.capture());
+        verify(notifier).sendToOwner(text.capture());
         assertThat(text.getValue())
                 .contains("guarda &lt;b&gt;questo&lt;/b&gt; &amp; piangi")
                 .contains("Contiene &lt;tag&gt; sospetti.");
