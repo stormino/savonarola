@@ -148,7 +148,9 @@ uncertain, prefer lower confidence over a forced binary call.
 
 - **Una chiamata per finestra, non una per messaggio né una per regola**: molto più economico, e il modello vede l'intero scambio invece di una frase isolata.
 - **`reasoning` sempre presente su ogni violazione** — finisce nel log e nel messaggio `/execute`, deve essere comprensibile a un admin che decide. Per i messaggi che non violano nulla non c'è invece alcun `reasoning`: il modello restituisce solo le violazioni, e il silenzio su un messaggio è il verdetto che andava bene.
-- **Gli id citati vengono validati** contro la finestra. Un id inventato, o riferito a un messaggio fornito solo come contesto, viene scartato: un'allucinazione non deve mai diventare un mute.
+- **Il regolamento è esaustivo.** Il modello deve sapere esplicitamente che le regole fornite sono le uniche esistenti, e che non deve applicare la propria policy di moderazione appresa in addestramento. Nella prima sessione live ha inventato `no_politics` e `respect_reciprocal` — quest'ultima mai esistita, la prima esclusa apposta (sezione 2.3) — e su quelle ha proposto sanzioni. **Gli id delle regole vengono quindi validati** contro il RuleSet attivo: una regola che non abbiamo scritto non può sanzionare nessuno.
+- **Il modello va avvertito che il gruppo scherza.** Tre dei quattro falsi positivi della prima sessione erano battute, due con emoji di risata nel testo. Marcatori di ironia ed esagerazione assurda vanno letti come tali.
+- **Gli id dei messaggi vengono validati** contro la finestra. Un id inventato, o riferito a un messaggio fornito solo come contesto, viene scartato: un'allucinazione non deve mai diventare un mute.
 
 ---
 

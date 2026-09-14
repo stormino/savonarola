@@ -38,6 +38,18 @@ public class JudgmentPromptBuilder {
             sender's usual style — the profile disambiguates tone, it does not excuse
             crossing a line.
 
+            THE RULEBOOK IS EXHAUSTIVE. The rules below are the only ones that exist in
+            this group. You have no others. Do not apply rules from any general moderation
+            policy you may know — about politics, protected groups, hate speech, civility
+            or anything else — and never invent a rule id. If a message is objectionable
+            but matches none of the rules given, it is NOT a violation and you report
+            nothing for it. "ruleId" must be copied exactly from the list of rule ids given.
+
+            HUMOUR: this group jokes constantly, about players, about pundits, about each
+            other's teams and about long-running in-jokes you will not recognise. Laughter
+            markers, emoji and absurd exaggeration are signs of banter, not of aggression.
+            Read a joke as a joke.
+
             OUTPUT: respond with a single JSON object listing ONLY the messages that
             violate a rule:
             {"violations": [{"messageId": number, "ruleId": string,
@@ -73,7 +85,10 @@ public class JudgmentPromptBuilder {
             sb.append("\n## ABOUT THIS GROUP\n").append(in.groupDossier()).append('\n');
         }
 
-        sb.append("\n## RULEBOOK\n");
+        sb.append("\n## RULEBOOK — these are the only rules that exist\n");
+        sb.append("Valid rule ids: ")
+          .append(in.activeRules().stream().map(r -> r.getId()).collect(Collectors.joining(", ")))
+          .append("\nNothing outside this list is a rule.\n");
         for (var rule : in.activeRules()) {
             sb.append("\n### ").append(rule.getId())
               .append(" (severity: ").append(rule.getSeverity()).append(")\n")

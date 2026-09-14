@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.stormino.savonarola.config.SavonarolaProperties;
 import com.github.stormino.savonarola.health.HealthMonitor;
+import com.github.stormino.savonarola.rules.Rule;
 import com.github.stormino.savonarola.store.StoredMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,12 +33,14 @@ public class ModelChainJudge implements LlmJudge {
 
         Set<Long> judgeable = input.candidates().stream()
                 .map(StoredMessage::getMessageId).collect(Collectors.toSet());
+        Set<String> knownRules = input.activeRules().stream()
+                .map(Rule::getId).collect(Collectors.toSet());
 
         LlmException last = null;
         for (String model : props.llm().active().judgmentModels()) {
             try {
                 List<Violation> violations = parse(client.complete(
-                        model, LlmCallType.JUDGMENT, system, user), judgeable);
+                        model, LlmCallType.JUDGMENT, system, user), judgeable, knownRules);
                 if (last != null) health.recordFallback();
                 health.recordSuccess();
                 return violations;
@@ -52,11 +55,11 @@ public class ModelChainJudge implements LlmJudge {
     }
 
     /**
-     * Every cited id is checked against the window. A model that invents an id, or points
-     * at something it was only given as context, must never turn into a mute — so those
-     * are dropped rather than trusted.
+     * Everything the model cites is checked against what it was actually given: the message
+     * ids against the window, and the rule ids against the active rulebook. A model that
+     * invents either must never turn into a mute.
      */
-    private List<Violation> parse(String raw, Set<Long> judgeable) {
+    private List<Violation> parse(String raw, Set<Long> judgeable, Set<String> knownRules) {
         try {
             String cleaned = raw.trim()
                     .replaceAll("^```(?:json)?", "")
@@ -81,6 +84,14 @@ public class ModelChainJudge implements LlmJudge {
                 if (ruleId.isBlank()) {
                     log.warn("Judge reported a violation on {} without a ruleId — ignored",
                             messageId);
+                    continue;
+                }
+                if (!knownRules.contains(ruleId)) {
+                    // Models reach for their own trained-in moderation taxonomy when the
+                    // supplied rulebook does not fit: no_politics and respect_reciprocal
+                    // were both invented this way in the first live session, and neither
+                    // exists here. A rule we never wrote cannot sanction anyone.
+                    log.warn("Judge invented rule '{}' on message {} — ignored", ruleId, messageId);
                     continue;
                 }
                 violations.add(new Violation(messageId, ruleId,
